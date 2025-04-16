@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 public class DefaultCassoServiceTest {
 
+    // Khai báo các dependency injection
     @Autowired
     private EntityManager entityManager;
 
@@ -62,13 +63,15 @@ public class DefaultCassoServiceTest {
     @Autowired
     private DefaultCassoService defaultCassoService;
 
-    // Test data objects
+    // Khai báo các đối tượng dữ liệu test
     private Project project;
     private Challenge challenge;
     private Account account;
     private Campaign campaign;
     private TransactionDataDTO transactionDataDTO;
+    private Donation existingDonation;
 
+    // Khởi tạo dữ liệu test trước mỗi test case
     @BeforeEach
     void setUp() {
         // Khởi tạo dữ liệu test cho Campaign
@@ -81,7 +84,7 @@ public class DefaultCassoServiceTest {
         project = Project.builder()
                 .title("Test Project")
                 .code("PRJ001")
-                .status(2) // Active status
+                .status(2)
                 .campaign(campaign)
                 .build();
 
@@ -111,8 +114,20 @@ public class DefaultCassoServiceTest {
                 .corresponsiveBankId("BANK123")
                 .corresponsiveBankName("Test Bank")
                 .build();
+
+        // Khởi tạo dữ liệu test cho Donation
+        existingDonation = Donation.builder()
+                .id("1")
+                .tid("TID001")
+                .value(BigDecimal.valueOf(100000))
+                .description("Original donation")
+                .project(project)
+                .challenge(challenge)
+                .refer(account)
+                .build();
     }
 
+    // Test cases cho hàm handleInPayment
     @Test
     @DisplayName("CS_handleInPayment_01")
     void handleInPayment_shouldReturnDonationWithRefer_whenDescriptionContainsReferPrefix() {
@@ -124,8 +139,6 @@ public class DefaultCassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        
-        // Kiểm tra dữ liệu được lưu trong database
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
     }
@@ -141,8 +154,6 @@ public class DefaultCassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        
-        // Kiểm tra dữ liệu được lưu trong database
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
     }
@@ -158,8 +169,6 @@ public class DefaultCassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        
-        // Kiểm tra dữ liệu được lưu trong database
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
     }
@@ -175,9 +184,131 @@ public class DefaultCassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        
-        // Kiểm tra dữ liệu được lưu trong database
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+    }
+
+    // Test cases cho hàm handleOutPayment
+    @Test
+    @DisplayName("CS_handleOutPayment_01")
+    void handleOutPayment_shouldReturnDonationWithoutRefer_whenReferNotExist() {
+        // Chuẩn bị dữ liệu test
+        transactionDataDTO.setDescription("NON_EXISTENT_TID");
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNull(savedDonation.getRefer());
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_02")
+    void handleOutPayment_shouldReturnDonationWithoutProject_whenProjectNotExist() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        existingDonation.setProject(null);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNull(savedDonation.getProject());
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_03")
+    void handleOutPayment_shouldReturnDonationWithoutChallenge_whenChallengeNotExist() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        existingDonation.setChallenge(null);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNull(savedDonation.getChallenge());
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_04")
+    void handleOutPayment_shouldReturnDonationWithoutTransferredProject_whenTransferredProjectNotExist() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        existingDonation.setTransferredProject(null);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNull(savedDonation.getTransferredProject());
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_05")
+    void handleOutPayment_shouldReturnDonationWithoutReferAccount_whenReferAccountNotExist() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        existingDonation.setRefer(null);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNull(savedDonation.getRefer());
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_06")
+    void handleOutPayment_shouldReturnDonationWithoutWrongDonation_whenWrongDonationNotExist() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+    }
+
+    @Test
+    @DisplayName("CS_handleOutPayment_07")
+    void handleOutPayment_shouldReturnDonationWithAllInformation_whenReferExists() {
+        // Chuẩn bị dữ liệu test
+        donationRepository.save(existingDonation);
+        transactionDataDTO.setDescription(existingDonation.getTid());
+
+        // Thực thi phương thức test
+        DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
+
+        // Kiểm tra kết quả
+        assertNotNull(result);
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertNotNull(savedDonation.getProject());
+        assertNotNull(savedDonation.getChallenge());
+        assertNotNull(savedDonation.getRefer());
     }
 }
