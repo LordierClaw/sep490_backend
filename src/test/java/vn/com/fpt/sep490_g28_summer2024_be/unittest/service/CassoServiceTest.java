@@ -1,4 +1,4 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import vn.com.fpt.sep490_g28_summer2024_be.common.AppConfig;
@@ -20,7 +19,6 @@ import vn.com.fpt.sep490_g28_summer2024_be.repository.*;
 import vn.com.fpt.sep490_g28_summer2024_be.service.casso.DefaultCassoService;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.concurrent.Executor;
 
@@ -29,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @SpringBootTest
 @Transactional
-public class DefaultCassoServiceTest {
+public class CassoServiceTest {
 
     // Khai báo các dependency injection
     @Autowired

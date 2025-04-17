@@ -39,65 +39,69 @@ public class DefaultWrongDonationService implements WrongDonationService{
     @Transactional
     public CompletableFuture<Void> updateWrongDonation() {
         return CompletableFuture.runAsync(() -> {
-            wrongDonationRepository.findAll().forEach(wrongDonation -> {
-                Donation donation = wrongDonation.getDonation();
-                if (donation.getValue().compareTo(BigDecimal.ZERO) < 0) {
-                    Donation referDonation = donationRepository.getDonationByTid(donation.getDescription());
-                    System.out.println("refer-donation: "+referDonation);
+            updateWrongDonationInAsync();
+        }, executor);
+    }
 
-                    if (referDonation != null) {
-                        donation.setTransferredProject(referDonation.getTransferredProject());
-                        donation.setProject(referDonation.getProject());
-                        donation.setCreatedBy(referDonation.getCreatedBy());
-                        donation.setChallenge(referDonation.getChallenge());
+    public void updateWrongDonationInAsync() {
+        wrongDonationRepository.findAll().forEach(wrongDonation -> {
+            Donation donation = wrongDonation.getDonation();
+            if (donation.getValue().compareTo(BigDecimal.ZERO) < 0) {
+                Donation referDonation = donationRepository.getDonationByTid(donation.getDescription());
+                System.out.println("refer-donation: "+referDonation);
+
+                if (referDonation != null) {
+                    donation.setTransferredProject(referDonation.getTransferredProject());
+                    donation.setProject(referDonation.getProject());
+                    donation.setCreatedBy(referDonation.getCreatedBy());
+                    donation.setChallenge(referDonation.getChallenge());
+                    donationRepository.save(donation);
+                    if (referDonation.getWrongDonation() == null && donation.getWrongDonation() != null) {
+                        wrongDonationRepository.delete(donation.getWrongDonation());
+                    }
+
+                }
+            } else {
+                Project project = donation.getProject();
+                if (project != null) {
+                    ProjectTransactionDTO validProject = projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
+                            project.getCode(), project.getCampaign().getCampaignId(), 2, false);
+
+                    validProject = validProject != null ? validProject : projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
+                            null, project.getCampaign().getCampaignId(), 2, false);
+
+                    validProject = validProject != null ? validProject : projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
+                            null, null, 2, false);
+
+                    if (validProject != null) {
+                        donation.setTransferredProject(Project.builder()
+                                .projectId(validProject.getProjectId())
+                                .code(validProject.getCode())
+                                .build());
+
                         donationRepository.save(donation);
-                        if (referDonation.getWrongDonation() == null && donation.getWrongDonation() != null) {
+                        if (donation.getWrongDonation() != null) {
                             wrongDonationRepository.delete(donation.getWrongDonation());
                         }
-
                     }
+
                 } else {
-                    Project project = donation.getProject();
-                    if (project != null) {
-                        ProjectTransactionDTO validProject = projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
-                                project.getCode(), project.getCampaign().getCampaignId(), 2, false);
+                    ProjectTransactionDTO validProject = projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
+                            null, null, 2, false);
 
-                        validProject = validProject != null ? validProject : projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
-                                null, project.getCampaign().getCampaignId(), 2, false);
-
-                        validProject = validProject != null ? validProject : projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
-                                null, null, 2, false);
-
-                        if (validProject != null) {
-                            donation.setTransferredProject(Project.builder()
-                                    .projectId(validProject.getProjectId())
-                                    .code(validProject.getCode())
-                                    .build());
-
-                            donationRepository.save(donation);
-                            if (donation.getWrongDonation() != null) {
-                                wrongDonationRepository.delete(donation.getWrongDonation());
-                            }
-                        }
-
-                    } else {
-                        ProjectTransactionDTO validProject = projectRepository.findProjectByCampaignIdAndDonationDescriptionAndStatus(
-                                null, null, 2, false);
-
-                        if (validProject != null) {
-                            donation.setTransferredProject(Project.builder()
-                                    .projectId(validProject.getProjectId())
-                                    .code(validProject.getCode())
-                                    .build());
-                            donationRepository.save(donation);
-                            if (donation.getWrongDonation() != null) {
-                                wrongDonationRepository.delete(donation.getWrongDonation());
-                            }
+                    if (validProject != null) {
+                        donation.setTransferredProject(Project.builder()
+                                .projectId(validProject.getProjectId())
+                                .code(validProject.getCode())
+                                .build());
+                        donationRepository.save(donation);
+                        if (donation.getWrongDonation() != null) {
+                            wrongDonationRepository.delete(donation.getWrongDonation());
                         }
                     }
                 }
-            });
-        }, executor);
+            }
+        });
     }
 
 

@@ -1,4 +1,4 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @MockBean(FirebaseServiceImpl.class)
 @Transactional
-public class DefaultNewsServiceTest {
+public class NewsServiceTest {
     @Autowired
     private EntityManager entityManager;
     @Autowired
