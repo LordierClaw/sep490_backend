@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @SpringBootTest
 @Transactional
-public class DefaultCassoServiceTest {
+public class CassoServiceTest {
 
     // Khai báo các dependency injection
     @Autowired

@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @MockBean(FirebaseServiceImpl.class)
 @Transactional
-public class DefaultNewsServiceTest {
+public class NewsServiceTest {
     @Autowired
     private EntityManager entityManager;
     @Autowired

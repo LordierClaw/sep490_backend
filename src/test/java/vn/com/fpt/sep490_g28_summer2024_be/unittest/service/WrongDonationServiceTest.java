@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
-public class DefaultWrongDonationTest {
+public class WrongDonationServiceTest {
     @Autowired
     private WrongDonationRepository wrongDonationRepository;
     @Autowired

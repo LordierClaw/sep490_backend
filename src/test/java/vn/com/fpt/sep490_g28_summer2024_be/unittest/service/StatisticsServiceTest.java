@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Transactional
 @MockBean(FirebaseServiceImpl.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DefaultStatisticsServiceTest {
+public class StatisticsServiceTest {
     @Autowired
     private ProjectRepository projectRepository;
 
