@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockMultipartFile;
@@ -45,6 +44,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -582,7 +582,7 @@ public class ExpenseServiceTest {
         expenseFileRepository.save(expenseFile1);
         expenseFileRepository.save(expenseFile2);
 
-        expense.setExpenseFiles(List.of(expenseFile1, expenseFile2));
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
         expense = expenseRepository.save(expense);
 
         // 2. Thực thi
@@ -775,7 +775,7 @@ public class ExpenseServiceTest {
         expenseFileRepository.save(expenseFile2);
 
         // Set expense files vào expense và lưu lại
-        expense.setExpenseFiles(List.of(expenseFile1, expenseFile2));
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
         expense = expenseRepository.save(expense);
 
         // Chuẩn bị dto để update
@@ -857,7 +857,7 @@ public class ExpenseServiceTest {
         expenseFileRepository.save(expenseFile2);
 
         // Set expense files vào expense và lưu lại
-        expense.setExpenseFiles(List.of(expenseFile1, expenseFile2));
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
         expense = expenseRepository.save(expense);
 
         // Chuẩn bị dto để update nhưng không bao gồm file
@@ -932,7 +932,7 @@ public class ExpenseServiceTest {
         expenseFileRepository.save(expenseFile2);
 
         // Set expense files vào expense và lưu lại
-        expense.setExpenseFiles(List.of(expenseFile1, expenseFile2));
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
         expense = expenseRepository.save(expense);
 
         // Chuẩn bị dto để update với ExpenseFiles là danh sách rỗng
@@ -1089,5 +1089,227 @@ public class ExpenseServiceTest {
                 .anyMatch(ef -> ef.getFile().equals("https://firebase/update-new1.txt")));
         assertTrue(dbExpenseFiles.stream()
                 .anyMatch(ef -> ef.getFile().equals("https://firebase/update-new2.txt")));
+    }
+
+    @Test
+    @DisplayName("ES_deleteExpense_01")
+    void deleteExpense_shouldThrowExpenseNotFound() {
+        // 1. Chuẩn bị dữ liệu
+        setUpAsAdmin();
+        BigInteger nonExistingExpenseId = BigInteger.valueOf(999999);
+
+        // 2. Thực thi
+        AppException ex = assertThrows(AppException.class,
+                () -> expenseService.deleteExpense(nonExistingExpenseId));
+
+        // 3. Kiểm tra dữ liệu trả về
+        assertEquals(ErrorCode.EXPENSE_NOT_FOUND, ex.getErrorCode());
+
+        // 4. Kiểm tra trong DB
+        assertEquals(0, expenseRepository.count());
+    }
+
+    @Test
+    @DisplayName("ES_deleteExpense_02")
+    void deleteExpense_shouldThrowUnauthorized() {
+        // 1. Chuẩn bị dữ liệu
+        setUpAsNonExistUser();
+        Project project = Project.builder()
+                .title("Test Project Delete")
+                .ward("Ward 17").district("District 17").province("Province 17")
+                .status(1)
+                .campaign(campaign)
+                .createdAt(java.time.LocalDateTime.now()).updatedAt(java.time.LocalDateTime.now())
+                .amountNeededToRaise(BigDecimal.valueOf(1000))
+                .totalBudget(BigDecimal.valueOf(2000))
+                .build();
+        project = projectRepository.save(project);
+
+        Expense expense = Expense.builder()
+                .title("Expense To Delete Unauthorized")
+                .unitPrice(BigDecimal.valueOf(500))
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .project(project)
+                .build();
+        expense = expenseRepository.save(expense);
+
+        // 2. Thực thi
+        Expense finalExpense = expense;
+        AppException ex = assertThrows(AppException.class,
+                () -> expenseService.deleteExpense(finalExpense.getExpenseId()));
+
+        // 3. Kiểm tra dữ liệu trả về
+        assertEquals(ErrorCode.HTTP_UNAUTHORIZED, ex.getErrorCode());
+
+        // 4. Kiểm tra trong DB
+        entityManager.clear();
+        var dbExpense = expenseRepository.findById(expense.getExpenseId());
+        assertTrue(dbExpense.isPresent()); // Kiểm tra expense vẫn còn trong DB
+    }
+
+    @Test
+    @DisplayName("ES_deleteExpense_03")
+    void deleteExpense_shouldThrowAccessDenied() {
+        // 1. Chuẩn bị dữ liệu
+        setUpAsNotAdmin();
+        Project project = Project.builder()
+                .title("Test Project Delete Access")
+                .ward("Ward 18").district("District 18").province("Province 18")
+                .status(1)
+                .campaign(campaign)
+                .createdAt(java.time.LocalDateTime.now()).updatedAt(java.time.LocalDateTime.now())
+                .amountNeededToRaise(BigDecimal.valueOf(1000))
+                .totalBudget(BigDecimal.valueOf(2000))
+                .build();
+        // Assign to admin account, not user account
+        Assign assign = assignRepository.save(Assign.builder().account(adminAccount).project(project).build());
+        project.setAssigns(List.of(assign));
+        project = projectRepository.save(project);
+
+        Expense expense = Expense.builder()
+                .title("Expense Delete Access Denied")
+                .unitPrice(BigDecimal.valueOf(500))
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .project(project)
+                .build();
+        expense = expenseRepository.save(expense);
+
+        // 2. Thực thi
+        Expense finalExpense = expense;
+        AppException ex = assertThrows(AppException.class,
+                () -> expenseService.deleteExpense(finalExpense.getExpenseId()));
+
+        // 3. Kiểm tra dữ liệu trả về
+        assertEquals(ErrorCode.ACCESS_DENIED, ex.getErrorCode());
+
+        // 4. Kiểm tra trong DB
+        entityManager.clear();
+        var dbExpense = expenseRepository.findById(expense.getExpenseId());
+        assertTrue(dbExpense.isPresent()); // Kiểm tra expense vẫn còn trong DB
+    }
+
+    @Test
+    @DisplayName("ES_deleteExpense_04")
+    void deleteExpense_shouldThrowDeleteFileFailedWhenFirebaseCannotDelete() throws IOException {
+        // 1. Chuẩn bị dữ liệu
+        setUpAsAdmin();
+        Project project = Project.builder()
+                .title("Test Project Delete File Failed")
+                .ward("Ward 19").district("District 19").province("Province 19")
+                .status(1)
+                .campaign(campaign)
+                .createdAt(java.time.LocalDateTime.now()).updatedAt(java.time.LocalDateTime.now())
+                .amountNeededToRaise(BigDecimal.valueOf(1000))
+                .totalBudget(BigDecimal.valueOf(2000))
+                .build();
+        project = projectRepository.save(project);
+
+        Expense expense = Expense.builder()
+                .title("Expense Delete File Failed")
+                .unitPrice(BigDecimal.valueOf(500))
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .project(project)
+                .build();
+        expense = expenseRepository.save(expense);
+
+        // Tạo expense files và liên kết với expense
+        List<String> fileUrls = List.of("https://firebase/file-delete-fail1.txt", "https://firebase/file-delete-fail2.txt");
+        
+        ExpenseFile expenseFile1 = ExpenseFile.builder()
+                .expense(expense)
+                .file(fileUrls.get(0))
+                .build();
+        ExpenseFile expenseFile2 = ExpenseFile.builder()
+                .expense(expense)
+                .file(fileUrls.get(1))
+                .build();
+        
+        // Lưu expense files
+        expenseFileRepository.save(expenseFile1);
+        expenseFileRepository.save(expenseFile2);
+
+        // Set expense files vào expense và lưu lại
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
+        expense = expenseRepository.save(expense);
+
+        // Mock Firebase service để throw IOException
+        when(firebaseService.deleteFileByPath(anyString())).thenThrow(new IOException("Delete failed"));
+
+        // 2. Thực thi
+        Expense finalExpense = expense;
+        AppException ex = assertThrows(AppException.class,
+                () -> expenseService.deleteExpense(finalExpense.getExpenseId()));
+
+        // 3. Kiểm tra dữ liệu trả về
+        assertEquals(ErrorCode.DELETE_FILE_FAILED, ex.getErrorCode());
+
+        // 4. Kiểm tra trong DB
+        entityManager.clear();
+        var dbExpense = expenseRepository.findById(expense.getExpenseId());
+        assertTrue(dbExpense.isPresent()); // Kiểm tra expense vẫn còn trong DB
+        var dbExpenseFiles = dbExpense.get().getExpenseFiles();
+        assertNotNull(dbExpenseFiles);
+        assertFalse(dbExpenseFiles.isEmpty()); // Kiểm tra các file vẫn tồn tại
+    }
+
+    @Test
+    @DisplayName("ES_deleteExpense_05")
+    void deleteExpense_shouldDeleteExpenseSuccessfully() throws IOException {
+        // 1. Chuẩn bị dữ liệu
+        setUpAsAdmin();
+        Project project = Project.builder()
+                .title("Test Project Delete Success")
+                .ward("Ward 20").district("District 20").province("Province 20")
+                .status(1)
+                .campaign(campaign)
+                .createdAt(java.time.LocalDateTime.now()).updatedAt(java.time.LocalDateTime.now())
+                .amountNeededToRaise(BigDecimal.valueOf(1000))
+                .totalBudget(BigDecimal.valueOf(2000))
+                .build();
+        project = projectRepository.save(project);
+
+        Expense expense = Expense.builder()
+                .title("Expense Delete Success")
+                .unitPrice(BigDecimal.valueOf(500))
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
+                .project(project)
+                .build();
+        expense = expenseRepository.save(expense);
+
+        // Tạo expense files và liên kết với expense
+        List<String> fileUrls = List.of("https://firebase/file-delete-success1.txt", "https://firebase/file-delete-success2.txt");
+        
+        ExpenseFile expenseFile1 = ExpenseFile.builder()
+                .expense(expense)
+                .file(fileUrls.get(0))
+                .build();
+        ExpenseFile expenseFile2 = ExpenseFile.builder()
+                .expense(expense)
+                .file(fileUrls.get(1))
+                .build();
+        
+        // Lưu expense files
+        expenseFileRepository.save(expenseFile1);
+        expenseFileRepository.save(expenseFile2);
+
+        // Set expense files vào expense và lưu lại
+        expense.setExpenseFiles(new ArrayList<>(List.of(expenseFile1, expenseFile2)));
+        expense = expenseRepository.save(expense);
+        BigInteger expenseId = expense.getExpenseId();
+
+        // 2. Thực thi
+        expenseService.deleteExpense(expenseId);
+
+        // 3. Kiểm tra trong DB
+        var dbExpense = expenseRepository.findById(expenseId);
+        assertFalse(dbExpense.isPresent()); // Kiểm tra expense đã bị xóa
+        
+        // Kiểm tra các file đã bị xóa
+        var expenseFiles = expenseFileRepository.findByExpenseId(expenseId);
+        assertTrue(expenseFiles.isEmpty());
     }
 }
