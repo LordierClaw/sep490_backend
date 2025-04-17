@@ -129,152 +129,390 @@ public class DefaultWrongDonationTest {
 
     @Test
     @DisplayName("WD_updateWrongDonation_03")
-    void updateWrongDonation_shouldDeleteWrongDonationIfProjectDoesNotExist() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, không còn tồn tại dự án
+    void updateWrongDonation_shouldNotDeleteWrongDonationWhenOnlyOneWayLink() {
+        // Tạo dữ liệu: khoản chi nhầm, có khoản hợp lệ chung mã giao dịch, WrongDonation chỉ liên kết 1 chiều (Donation không set wrongDonation)
         Project project = projectRepository.save(Project.builder()
                 .title("Dự án 3").code("PRJ03").status(2).campaign(campaign)
                 .ward("ward3").district("district3").province("province3")
                 .createdAt(LocalDateTime.now()).build());
         Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("4").tid("TID003").project(project)
+                .id("4").tid("TID003")
+                .value(BigDecimal.valueOf(-150000))
+                .description("TID_MATCH_3")
+                .build());
+        // Không set wrongDonation field cho Donation (liên kết 1 chiều)
+        wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
+        Donation rightDonation = donationRepository.save(Donation.builder()
+                .id("5").tid("TID_MATCH_3")
                 .createdBy(account)
-                .value(BigDecimal.valueOf(-200000))
-                .description("NO_PROJECT")
+                .project(project)
+                .value(BigDecimal.valueOf(150000))
+                .description("TID_MATCH_3")
+                .createdAt(LocalDateTime.now())
+                .build());
+        // Gọi hàm updateWrongDonation
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: WrongDonation không bị xóa
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertEquals(rightDonation.getProject().getProjectId(), updatedDonation.getProject() != null ? updatedDonation.getProject().getProjectId() : null);
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_04")
+    void updateWrongDonation_shouldDeleteWrongDonationWhenValidProjectExistsAndTwoWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, có dự án đúng code/campaign/status, WrongDonation liên kết 2 chiều
+        Project project = projectRepository.save(Project.builder()
+                .title("Dự án 4").code("PRJ04").status(2).campaign(campaign)
+                .ward("ward4").district("district4").province("province4")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
-        // Xóa dự án liên quan
-        projectRepository.delete(project);
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("6").tid("TID004")
+                .project(project)
+                .createdBy(account)
+                .value(BigDecimal.valueOf(200000))
+                .description("PRJ04")
+                .createdAt(LocalDateTime.now())
+                .build());
+        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        donation.setWrongDonation(wrong); // Liên kết 2 chiều
+        donationRepository.save(donation);
+
         // Gọi hàm updateWrongDonation
         defaultWrongDonationService.updateWrongDonationInAsync();
         // Kiểm tra lại DB: WrongDonation bị xóa
         List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
         assertEquals(0, wrongDonations.size());
-    }
-
-    @Test
-    @DisplayName("WD_updateWrongDonation_04")
-    void updateWrongDonation_shouldUpdateInfoAndDeleteWrongDonationByProjectStatus() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, có 1 dự án với code, campaignId, status tương ứng
-        Project project = projectRepository.save(Project.builder()
-                .title("Dự án 4").code("PRJ04").status(2).campaign(campaign)
-                .ward("ward4").district("district4").province("province4")
-                .createdAt(LocalDateTime.now()).build());
-        Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("5").tid("TID004").project(project)
-                .createdBy(account)
-                .value(BigDecimal.valueOf(300000))
-                .description("PRJ04")
-                .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
-        // Gọi hàm updateWrongDonation
-        defaultWrongDonationService.updateWrongDonationInAsync();
-        // Kiểm tra lại DB: WrongDonation bị xóa, donation được cập nhật transferredProject
-        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
-        assertEquals(0, wrongDonations.size());
-        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
         assertNotNull(updatedDonation);
-        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(project.getProjectId(), updatedDonation.getProject().getProjectId());
     }
 
     @Test
     @DisplayName("WD_updateWrongDonation_05")
-    void updateWrongDonation_shouldUpdateInfoAndDeleteWrongDonationByProjectStatusCase2() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, có 1 dự án với status tương ứng
+    void updateWrongDonation_shouldNotDeleteWrongDonationWhenValidProjectExistsAndOneWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, có dự án đúng code/campaign/status, WrongDonation chỉ liên kết 1 chiều
         Project project = projectRepository.save(Project.builder()
                 .title("Dự án 5").code("PRJ05").status(2).campaign(campaign)
                 .ward("ward5").district("district5").province("province5")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("6").tid("TID005").project(project)
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("7").tid("TID005")
+                .project(project)
                 .createdBy(account)
-                .value(BigDecimal.valueOf(400000))
+                .value(BigDecimal.valueOf(250000))
                 .description("PRJ05")
-                .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
+                .createdAt(LocalDateTime.now())
+                .build());
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build()); // Không set wrongDonation cho Donation
         // Gọi hàm updateWrongDonation
         defaultWrongDonationService.updateWrongDonationInAsync();
-        // Kiểm tra lại DB: WrongDonation bị xóa, donation được cập nhật transferredProject
+        // Kiểm tra lại DB: WrongDonation không bị xóa
         List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
-        assertEquals(0, wrongDonations.size());
-        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
         assertNotNull(updatedDonation);
-        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(project.getProjectId(), updatedDonation.getProject().getProjectId());
     }
 
     @Test
     @DisplayName("WD_updateWrongDonation_06")
-    void updateWrongDonation_shouldNotUpdateOrDeleteWrongDonationIfNoMatchingProjectFound() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, không tìm thấy dự án tương ứng để chuyển
+    void updateWrongDonation_shouldDeleteWrongDonationWhenCampaignAndStatusMatchAndTwoWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, tìm thấy 1 dự án với campaignId, status tương ứng, WrongDonation liên kết 2 chiều
         Project project = projectRepository.save(Project.builder()
                 .title("Dự án 6").code("PRJ06").status(2).campaign(campaign)
                 .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("7").tid("TID006").project(project)
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("8").tid("TID006")
+                .value(BigDecimal.valueOf(300000))
+                .project(project)
+                .description("desc6")
                 .createdBy(account)
-                .value(BigDecimal.valueOf(500000))
-                .description("NO_MATCH_DUAN")
+                .createdAt(LocalDateTime.now())
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 6 hợp lệ").code("PRJ06VALID").status(2).campaign(campaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
+
+        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        donation.setWrongDonation(wrong); // Liên kết 2 chiều
+        donationRepository.save(donation);
         // Gọi hàm updateWrongDonation
         defaultWrongDonationService.updateWrongDonationInAsync();
-        // Kiểm tra lại DB: WrongDonation vẫn còn, không cập nhật gì
+        // Kiểm tra lại DB: WrongDonation bị xóa, donation chuyển sang project mới
         List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
-        assertEquals(1, wrongDonations.size());
-        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        assertEquals(0, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
         assertNotNull(updatedDonation);
-        assertNull(updatedDonation.getTransferredProject());
+        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(validProject.getProjectId(), updatedDonation.getTransferredProject().getProjectId());
     }
 
     @Test
     @DisplayName("WD_updateWrongDonation_07")
-    void updateWrongDonation_shouldNotUpdateOrDeleteWrongDonationIfNoMatchingProjectFoundCase2() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, không tìm thấy dự án tương ứng để chuyển
+    void updateWrongDonation_shouldNotDeleteWrongDonationWhenCampaignAndStatusMatchAndOneWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, tìm thấy 1 dự án với campaignId, status tương ứng, WrongDonation liên kết 1 chiều
         Project project = projectRepository.save(Project.builder()
-                .title("Dự án 7").code("PRJ07").status(2).campaign(campaign)
-                .ward("ward7").district("district7").province("province7")
+                .title("Dự án 6").code("PRJ06").status(2).campaign(campaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("8").tid("TID007").project(project)
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("8").tid("TID006")
+                .value(BigDecimal.valueOf(300000))
+                .project(project)
+                .description("desc6")
                 .createdBy(account)
-                .value(BigDecimal.valueOf(600000))
-                .description("NO_MATCH_DUAN2")
+                .createdAt(LocalDateTime.now())
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 6 hợp lệ").code("PRJ06VALID").status(2).campaign(campaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build()); // Không set wrongDonation cho Donation
         // Gọi hàm updateWrongDonation
         defaultWrongDonationService.updateWrongDonationInAsync();
-        // Kiểm tra lại DB: WrongDonation vẫn còn, không cập nhật gì
+        // Kiểm tra lại DB: WrongDonation không bị xóa, donation chuyển sang project mới
         List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
         assertEquals(1, wrongDonations.size());
-        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
         assertNotNull(updatedDonation);
-        assertNull(updatedDonation.getTransferredProject());
+        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(validProject.getProjectId(), updatedDonation.getTransferredProject().getProjectId());
     }
 
     @Test
     @DisplayName("WD_updateWrongDonation_08")
-    void updateWrongDonation_shouldUpdateInfoAndDeleteWrongDonationIfMatchingProjectFound() throws Exception {
-        // Tạo dữ liệu test: khoản chi nhầm, tìm thấy 1 dự án với status tương ứng, WrongDonation bị xóa
+    void updateWrongDonation_shouldDeleteWrongDonationWhenStatusMatchAndTwoWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, tìm thấy 1 dự án với status tương ứng, WrongDonation liên kết 2 chiều
         Project project = projectRepository.save(Project.builder()
-                .title("Dự án 8").code("PRJ08").status(2).campaign(campaign)
-                .ward("ward8").district("district8").province("province8")
+                .title("Dự án 6").code("PRJ06").status(2).campaign(campaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        Donation wrongDonation = donationRepository.save(Donation.builder()
-                .id("9").tid("TID008").project(project)
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("8").tid("TID006")
+                .value(BigDecimal.valueOf(300000))
+                .project(project)
+                .description("desc6")
                 .createdBy(account)
-                .value(BigDecimal.valueOf(700000))
-                .description("PRJ08")
+                .createdAt(LocalDateTime.now())
+                .build());
+        Campaign anotherCampaign = campaignRepository.save(Campaign.builder()
+                .title("Chiến dịch chung").description("desc").isActive(true)
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 6 hợp lệ").code("PRJ06VALID").status(2)
+                .campaign(anotherCampaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
                 .createdAt(LocalDateTime.now()).build());
-        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(wrongDonation).build());
+
+        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        donation.setWrongDonation(wrong); // Liên kết 2 chiều
+        donationRepository.save(donation);
         // Gọi hàm updateWrongDonation
         defaultWrongDonationService.updateWrongDonationInAsync();
-        // Kiểm tra lại DB: WrongDonation bị xóa, donation được cập nhật transferredProject
+        // Kiểm tra lại DB: WrongDonation bị xóa, donation chuyển sang project mới
         List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
         assertEquals(0, wrongDonations.size());
-        Donation updatedDonation = donationRepository.findById(wrongDonation.getDonationId()).orElse(null);
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
         assertNotNull(updatedDonation);
         assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(validProject.getProjectId(), updatedDonation.getTransferredProject().getProjectId());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_09")
+    void updateWrongDonation_shouldNotDeleteWrongDonationWhenStatusMatchAndOneWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, tìm thấy 1 dự án với status tương ứng, WrongDonation liên kết 1 chiều
+        Project project = projectRepository.save(Project.builder()
+                .title("Dự án 6").code("PRJ06").status(2).campaign(campaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
+                .createdAt(LocalDateTime.now()).build());
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("8").tid("TID006")
+                .value(BigDecimal.valueOf(300000))
+                .project(project)
+                .description("desc6")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        Campaign anotherCampaign = campaignRepository.save(Campaign.builder()
+                .title("Chiến dịch chung").description("desc").isActive(true)
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 6 hợp lệ").code("PRJ06VALID").status(2)
+                .campaign(anotherCampaign)
+                .ward("ward6").district("district6").province("province6")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
+                .createdAt(LocalDateTime.now()).build());
+
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build()); // Không set wrongDonation cho Donation
+        // Gọi hàm updateWrongDonation
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: WrongDonation không bị xóa, donation chuyển sang project mới
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(validProject.getProjectId(), updatedDonation.getTransferredProject().getProjectId());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_10")
+    void updateWrongDonation_shouldNotUpdateOrDeleteWhenNoProjectToTransfer() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, vẫn có thông tin dự án trong khoản thu nhưng không tìm thấy dự án tương tự để chuyển
+        Project project = projectRepository.save(Project.builder()
+                .title("Dự án 10").code("PRJ10").status(1).campaign(campaign)
+                .ward("ward10").district("district10").province("province10")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
+                .createdAt(LocalDateTime.now()).build());
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("12").tid("TID010")
+                .project(project)
+                .value(BigDecimal.valueOf(500000))
+                .description("desc10")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        donation.setWrongDonation(wrong);
+        donationRepository.save(donation);
+        // Không tạo project nào khác thỏa mãn điều kiện chuyển
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: Không cập nhật gì, WrongDonation vẫn còn
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertEquals(project.getProjectId(), updatedDonation.getProject().getProjectId());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_11")
+    void updateWrongDonation_shouldNotUpdateOrDeleteWhenNoProjectToTransfer_OneWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, không có thông tin dự án trong khoản thu, không tìm thấy dự án tương tự để chuyển, WrongDonation liên kết 1 chiều
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("13").tid("TID011")
+                .value(BigDecimal.valueOf(600000))
+                .description("desc11")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        // Không tạo project nào thỏa mãn điều kiện chuyển
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: Không cập nhật gì, WrongDonation vẫn còn
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertNull(updatedDonation.getProject());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_12")
+    void updateWrongDonation_shouldUpdateTransferProjectAndDeleteWrongDonationWhenStatusMatchAndTwoWayLink() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, không có thông tin dự án trong khoản thu, tìm thấy 1 dự án với status tương ứng, WrongDonation liên kết 2 chiều
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("14").tid("TID012")
+                .value(BigDecimal.valueOf(700000))
+                .description("desc12")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 12 hợp lệ").code("PRJ12VALID").status(2)
+                .campaign(campaign)
+                .ward("ward12").district("district12").province("province12")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
+                .createdAt(LocalDateTime.now()).build());
+        WrongDonation wrong = wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        donation.setWrongDonation(wrong);
+        donationRepository.save(donation);
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: WrongDonation bị xóa, donation chuyển sang project mới
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(0, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertNotNull(updatedDonation.getTransferredProject());
+        assertEquals(validProject.getProjectId(), updatedDonation.getTransferredProject().getProjectId());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_13")
+    void updateWrongDonation_shouldNotDeleteWrongDonationWhenStatusMatchAndOneWayLinkAndHasNoProjectInDonation() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, không có thông tin dự án trong khoản thu, tìm thấy 1 dự án với status tương ứng, WrongDonation liên kết 1 chiều
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("15").tid("TID013")
+                .value(BigDecimal.valueOf(800000))
+                .description("desc13")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        Project validProject = projectRepository.save(Project.builder()
+                .title("Dự án 13 hợp lệ").code("PRJ13VALID").status(2)
+                .campaign(campaign)
+                .ward("ward13").district("district13").province("province13")
+                .amountNeededToRaise(BigDecimal.valueOf(100000))
+                .totalBudget(BigDecimal.valueOf(50000))
+                .createdAt(LocalDateTime.now()).build());
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: WrongDonation không bị xóa, donation chuyển sang project mới
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertNull(updatedDonation.getProject());
+    }
+
+    @Test
+    @DisplayName("WD_updateWrongDonation_14")
+    void updateWrongDonation_shouldDoNothingWhenNoProjectMatch() {
+        // Tạo dữ liệu: khoản thu cho 1 dự án, không có thông tin dự án trong khoản thu, không tìm thấy 1 dự án với status tương ứng
+        Donation donation = donationRepository.save(Donation.builder()
+                .id("15").tid("TID013")
+                .value(BigDecimal.valueOf(800000))
+                .description("desc14")
+                .createdBy(account)
+                .createdAt(LocalDateTime.now())
+                .build());
+        wrongDonationRepository.save(WrongDonation.builder().donation(donation).build());
+        defaultWrongDonationService.updateWrongDonationInAsync();
+        // Kiểm tra lại DB: WrongDonation không bị xóa, donation chuyển sang project mới
+        List<WrongDonation> wrongDonations = wrongDonationRepository.findAll();
+        assertEquals(1, wrongDonations.size());
+        Donation updatedDonation = donationRepository.findById(donation.getDonationId()).orElse(null);
+        assertNotNull(updatedDonation);
+        assertNull(updatedDonation.getProject());
     }
 }
+
 
 
