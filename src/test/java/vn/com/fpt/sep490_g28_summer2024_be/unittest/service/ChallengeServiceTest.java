@@ -286,6 +286,7 @@ public class ChallengeServiceTest {
         assertEquals(ErrorCode.HTTP_FILE_IS_NOT_IMAGE, exception.getErrorCode());
 
         // Verify no challenge was created
+        entityManager.clear();
         Long challengeCount = entityManager
                 .createQuery("SELECT COUNT(c) FROM Challenge c WHERE c.title = :title", Long.class)
                 .setParameter("title", "New Challenge")
@@ -313,6 +314,7 @@ public class ChallengeServiceTest {
         assertEquals(ErrorCode.FILE_SIZE_EXCEEDS_LIMIT, exception.getErrorCode());
 
         // Verify no challenge was created
+        entityManager.clear();
         Long challengeCount = entityManager
                 .createQuery("SELECT COUNT(c) FROM Challenge c WHERE c.title = :title", Long.class)
                 .setParameter("title", "New Challenge")
@@ -343,6 +345,7 @@ public class ChallengeServiceTest {
         assertEquals(ErrorCode.UPLOAD_FAILED, exception.getErrorCode());
 
         // Verify no challenge was created
+        entityManager.clear();
         Long challengeCount = entityManager
                 .createQuery("SELECT COUNT(c) FROM Challenge c WHERE c.title = :title", Long.class)
                 .setParameter("title", "New Challenge")
@@ -371,6 +374,7 @@ public class ChallengeServiceTest {
         assertEquals(ErrorCode.PROJECT_NOT_EXISTED, exception.getErrorCode());
 
         // Verify no challenge was created
+        entityManager.clear();
         Long challengeCount = entityManager
                 .createQuery("SELECT COUNT(c) FROM Challenge c WHERE c.title = :title", Long.class)
                 .setParameter("title", "New Challenge")

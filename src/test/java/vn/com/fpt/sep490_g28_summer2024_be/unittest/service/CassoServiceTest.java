@@ -12,14 +12,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import vn.com.fpt.sep490_g28_summer2024_be.common.AppConfig;
+import vn.com.fpt.sep490_g28_summer2024_be.dto.casso.ApiCassoResponseDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.casso.TransactionDataDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.donation.DonationResponseDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.*;
+import vn.com.fpt.sep490_g28_summer2024_be.exception.AppException;
 import vn.com.fpt.sep490_g28_summer2024_be.repository.*;
 import vn.com.fpt.sep490_g28_summer2024_be.service.casso.DefaultCassoService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,10 +71,25 @@ public class CassoServiceTest {
     private Campaign campaign;
     private TransactionDataDTO transactionDataDTO;
     private Donation existingDonation;
+    @Autowired
+    private CampaignRepository campaignRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
     // Khởi tạo dữ liệu test trước mỗi test case
     @BeforeEach
     void setUp() {
+
+        // Khởi tạo dữ liệu test cho Account
+        Role adminRole = roleRepository.save(Role.builder().roleName("admin").roleDescription("").build());
+        account = accountRepository.save(Account.builder()
+                .email("test@example.com")
+                .password("123456")
+                .code("ACC001")
+                .role(adminRole)
+                .fullname("Test User")
+                .build());
+
         // Khởi tạo dữ liệu test cho Campaign
         campaign = Campaign.builder()
                 .title("Test Campaign")
@@ -83,14 +101,13 @@ public class CassoServiceTest {
                 .title("Test Project")
                 .code("PRJ001")
                 .status(2)
+                .ward("wardtest")
+                .district("districttest")
+                .province("provincetest")
+                .createdAt(java.time.LocalDateTime.now()).updatedAt(java.time.LocalDateTime.now())
+                .amountNeededToRaise(BigDecimal.valueOf(1000))
+                .totalBudget(BigDecimal.valueOf(2000))
                 .campaign(campaign)
-                .build();
-
-        // Khởi tạo dữ liệu test cho Account
-        account = Account.builder()
-                .email("test@example.com")
-                .code("ACC001")
-                .fullname("Test User")
                 .build();
 
         // Khởi tạo dữ liệu test cho Challenge
@@ -101,8 +118,7 @@ public class CassoServiceTest {
 
         // Khởi tạo dữ liệu test cho TransactionDataDTO
         transactionDataDTO = TransactionDataDTO.builder()
-                .id(1L)
-                .tid("TID001")
+                .tid("TID002")
                 .description("Test Transaction")
                 .amount(BigDecimal.valueOf(100000))
                 .when(LocalDateTime.now())
@@ -115,7 +131,6 @@ public class CassoServiceTest {
 
         // Khởi tạo dữ liệu test cho Donation
         existingDonation = Donation.builder()
-                .id("1")
                 .tid("TID001")
                 .value(BigDecimal.valueOf(100000))
                 .description("Original donation")
@@ -125,10 +140,19 @@ public class CassoServiceTest {
                 .build();
     }
 
-    // Test cases cho hàm handleInPayment
+    void saveTestData() {
+        campaign = campaignRepository.save(campaign);
+        project = projectRepository.save(project);
+        challenge = challengeRepository.save(challenge);
+        existingDonation = donationRepository.save(existingDonation);
+        transactionDataDTO.setId(1L);
+    }
+
     @Test
     @DisplayName("CS_handleInPayment_01")
     void handleInPayment_shouldReturnDonationWithRefer_whenDescriptionContainsReferPrefix() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         transactionDataDTO.setDescription(AppConfig.REFER_PREFIX + " " + account.getCode());
 
@@ -144,6 +168,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleInPayment_02")
     void handleInPayment_shouldReturnDonationWithChallenge_whenDescriptionContainsChallengePrefix() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         transactionDataDTO.setDescription(AppConfig.CHALLENGE_PREFIX + " " + challenge.getChallengeCode());
 
@@ -159,8 +185,10 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleInPayment_03")
     void handleInPayment_shouldReturnDonationWithProject_whenDescriptionContainsProjectCode() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
-        transactionDataDTO.setDescription(project.getCode());
+        transactionDataDTO.setDescription(AppConfig.PROJECT_PREFIX + " " + project.getCode());
 
         // Thực thi phương thức test
         DonationResponseDTO result = defaultCassoService.handleInPayment(transactionDataDTO);
@@ -174,6 +202,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleInPayment_04")
     void handleInPayment_shouldReturnDonationWithCreatedBy_whenDescriptionContainsAccountPrefix() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         transactionDataDTO.setDescription(AppConfig.ACCOUNT_PREFIX + " " + account.getCode());
 
@@ -186,12 +216,13 @@ public class CassoServiceTest {
         assertNotNull(savedDonation);
     }
 
-    // Test cases cho hàm handleOutPayment
     @Test
     @DisplayName("CS_handleOutPayment_01")
     void handleOutPayment_shouldReturnDonationWithoutRefer_whenReferNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
-        transactionDataDTO.setDescription("NON_EXISTENT_TID");
+        transactionDataDTO.setDescription("TID001");
 
         // Thực thi phương thức test
         DonationResponseDTO result = defaultCassoService.handleOutPayment(transactionDataDTO);
@@ -206,6 +237,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_02")
     void handleOutPayment_shouldReturnDonationWithoutProject_whenProjectNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         existingDonation.setProject(null);
@@ -216,14 +249,18 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
-        assertNotNull(savedDonation);
-        assertNull(savedDonation.getProject());
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(d) FROM Donation d WHERE d.donationId = :donationId AND d.project IS NULL", Long.class)
+                .setParameter("donationId", result.getDonationId())
+                .getSingleResult();
+        assertTrue(count > 0);
     }
 
     @Test
     @DisplayName("CS_handleOutPayment_03")
     void handleOutPayment_shouldReturnDonationWithoutChallenge_whenChallengeNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         existingDonation.setChallenge(null);
@@ -242,6 +279,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_04")
     void handleOutPayment_shouldReturnDonationWithoutTransferredProject_whenTransferredProjectNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         existingDonation.setTransferredProject(null);
@@ -260,6 +299,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_05")
     void handleOutPayment_shouldReturnDonationWithoutReferAccount_whenReferAccountNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         existingDonation.setRefer(null);
@@ -278,6 +319,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_06")
     void handleOutPayment_shouldReturnDonationWithoutWrongDonation_whenWrongDonationNotExist() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
@@ -294,6 +337,8 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_07")
     void handleOutPayment_shouldReturnDonationWithAllInformation_whenReferExists() {
+        saveTestData();
+
         // Chuẩn bị dữ liệu test
         donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());

@@ -160,28 +160,30 @@ public class DefaultCassoService implements CassoService {
 
     @Async("initExecutor")
     public CompletableFuture<ApiCassoResponseDTO> fetchApiCasso(String url){
-        return CompletableFuture.supplyAsync(() -> {
-            Request request = new Request.Builder()
-                    .url(url)
-                    .get()
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", "Apikey AK_CS.8e4670404c6a11ef9068f9e08e26656f.jIAdCzNome8LEwqUIYGh65XdcPcYloPybfsTgdZrfiCqK6BC2lYfenHYzuHp26Qo6MwQ9rRx")
-                    .build();
-            try {
-                Response response = okHttpClient.newCall(request).execute();
-                if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+        return CompletableFuture.supplyAsync(() -> fetchApiCassoInAsync(url), executor);
+    }
 
-                // fetch response (body)
-                String responseBody = response.body() == null ? null : response.body().string();
+    public ApiCassoResponseDTO fetchApiCassoInAsync(String url) {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Apikey AK_CS.8e4670404c6a11ef9068f9e08e26656f.jIAdCzNome8LEwqUIYGh65XdcPcYloPybfsTgdZrfiCqK6BC2lYfenHYzuHp26Qo6MwQ9rRx")
+                .build();
+        try {
+            Response response = okHttpClient.newCall(request).execute();
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
 
-                // Parse the JSON response and map it to your entity
-                return  objectMapper.readValue(responseBody, ApiCassoResponseDTO.class);
-            } catch (IOException e) {
-                throw new AppException(ErrorCode.HTTP_FETCH_FAILED);
-            } catch (Exception e){
-                throw new AppException(ErrorCode.HTTP_MAPPING_FAILED);
-            }
-        }, executor);
+            // fetch response (body)
+            String responseBody = response.body() == null ? null : response.body().string();
+
+            // Parse the JSON response and map it to your entity
+            return objectMapper.readValue(responseBody, ApiCassoResponseDTO.class);
+        } catch (IOException e) {
+            throw new AppException(ErrorCode.HTTP_FETCH_FAILED);
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.HTTP_MAPPING_FAILED);
+        }
     }
 
     @Transactional
