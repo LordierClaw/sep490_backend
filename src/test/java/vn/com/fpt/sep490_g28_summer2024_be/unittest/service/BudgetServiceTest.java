@@ -1,4 +1,4 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,16 +8,13 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.annotation.Rollback;
 //import org.springframework.test.context.TestEntityManager;
 import vn.com.fpt.sep490_g28_summer2024_be.common.ErrorCode;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.budget.BudgetRequestDTO;
-import vn.com.fpt.sep490_g28_summer2024_be.dto.pageinfo.PageResponse;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.budget.BudgetResponseDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Account;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Budget;
-import vn.com.fpt.sep490_g28_summer2024_be.entity.Campaign;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Project;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Role;
 import vn.com.fpt.sep490_g28_summer2024_be.exception.AppException;
@@ -31,7 +28,6 @@ import vn.com.fpt.sep490_g28_summer2024_be.service.budget.BudgetService;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 @MockBean(FirebaseServiceImpl.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class BudgetServiceImplTest {
+public class BudgetServiceTest {
 
     @Autowired
     private ProjectRepository projectRepository;

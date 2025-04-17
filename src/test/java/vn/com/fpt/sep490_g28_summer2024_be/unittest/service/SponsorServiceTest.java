@@ -1,17 +1,14 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.com.fpt.sep490_g28_summer2024_be.common.ErrorCode;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.authentication.UserResponse;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.pageinfo.PageResponse;
@@ -32,7 +29,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +39,7 @@ import static org.mockito.Mockito.when;
 @Transactional
 @MockBean(FirebaseServiceImpl.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DefaultSponsorServiceTest {
+public class SponsorServiceTest {
 
     @Autowired
     private ProjectRepository projectRepository;
