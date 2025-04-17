@@ -1,4 +1,4 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
