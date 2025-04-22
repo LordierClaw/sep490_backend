@@ -168,7 +168,7 @@ public class DefaultCassoService implements CassoService {
                 .url(url)
                 .get()
                 .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Apikey AK_CS.8e4670404c6a11ef9068f9e08e26656f.jIAdCzNome8LEwqUIYGh65XdcPcYloPybfsTgdZrfiCqK6BC2lYfenHYzuHp26Qo6MwQ9rRx")
+                .addHeader("Authorization", "Apikey AK_CS.d91801801f7111f0817bcdc74842cb1f.yYCdiseHkItpHIKOpl8idQckGnIFJGRw6NAoEEdazmztTVtn3KRxRpNt8yNiP2K1lMZaBAIa")
                 .build();
         try {
             Response response = okHttpClient.newCall(request).execute();
