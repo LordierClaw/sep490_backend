@@ -902,7 +902,7 @@ public class SponsorServiceTest {
         requestDTO.setContract("");  // Set contract to a non-empty value
 
         // Setup mock files
-        MockMultipartFile contractFile = new MockMultipartFile("", "some-contract-path.pdf", "application/pdf", "fake pdf content".getBytes());
+        MockMultipartFile contractFile = new MockMultipartFile("name", "", "application/pdf", "fake pdf content".getBytes());
         MockMultipartFile logo = new MockMultipartFile("logo", new byte[0]);
 
         // Test
@@ -1092,7 +1092,7 @@ public class SponsorServiceTest {
         requestDTO.setPhoneNumber("0987654321");
         requestDTO.setValue("1000");  // This would make total 10000 (5000 + 4000 + 1000)
         requestDTO.setNote("Test Note");
-        requestDTO.setContract(null); // Đảm bảo vào nhánh kiểm tra contract rỗng
+        requestDTO.setContract(""); // Đảm bảo vào nhánh kiểm tra contract rỗng
 
         // Setup mock files
         MockMultipartFile contractFile = new MockMultipartFile("contract", "some-contract-path.pdf", "application/pdf", "fake pdf content".getBytes());
@@ -1138,9 +1138,11 @@ public class SponsorServiceTest {
         requestDTO.setPhoneNumber("0987654321");
         requestDTO.setValue("1000");
         requestDTO.setNote("Test Note");
+//        requestDTO.setLogo("");
+        requestDTO.setContract("abc");
 
         // Setup mock files where file is null
-        MockMultipartFile file = null;
+        MockMultipartFile file = new MockMultipartFile("file","some-file-path.pdf", "application/exe", "fake pdf content".getBytes() );
         MockMultipartFile logo = new MockMultipartFile("logo", new byte[0]);
 
         // Test and verify
@@ -1169,6 +1171,7 @@ public class SponsorServiceTest {
                 .value(new BigDecimal("1000"))
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .logo("abcd.png")
                 .build();
         sponsor = sponsorRepository.save(sponsor);
 
@@ -1181,9 +1184,10 @@ public class SponsorServiceTest {
         requestDTO.setPhoneNumber("0987654321");
         requestDTO.setValue("1000");
         requestDTO.setNote("Test Note");
+        requestDTO.setContract("abc");
 
         // Setup mock files
-        MockMultipartFile contractFile = new MockMultipartFile("contract", new byte[0]);
+        MockMultipartFile contractFile = null;
         MockMultipartFile logoFile = new MockMultipartFile("logo", "logo.png", "image/png", "test".getBytes());
 
         // Mock Firebase service to throw IOException for logo upload
@@ -1197,5 +1201,6 @@ public class SponsorServiceTest {
 
         assertEquals(ErrorCode.UPLOAD_FAILED, exception.getErrorCode());
     }
+
 
 }

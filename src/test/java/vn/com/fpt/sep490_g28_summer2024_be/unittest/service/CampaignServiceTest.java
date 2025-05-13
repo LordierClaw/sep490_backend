@@ -374,8 +374,14 @@ public class CampaignServiceTest {
         when(firebaseService.uploadOneFile(any(), any(), any()))
                 .thenReturn("test-thumbnail-url");
 
+        MockMultipartFile validImage = new MockMultipartFile(
+                "image",
+                "test.jpg",
+                "image/jpeg",
+                "test content".getBytes()
+        );
         // Act
-        CampaignResponseDTO response = campaignService.addCampaign(campaignDTO, null);
+        CampaignResponseDTO response = campaignService.addCampaign(campaignDTO, validImage);
 
         // Assert
         assertNotNull(response, "Response should not be null");
