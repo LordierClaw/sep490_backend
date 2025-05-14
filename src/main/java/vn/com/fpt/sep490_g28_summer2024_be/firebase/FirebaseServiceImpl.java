@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Service
 public class FirebaseServiceImpl implements FirebaseService {
-    private final String bucketName = "sep490-g28-summer24.appspot.com";
+    private final String bucketName = "sep490-3d1d7.firebasestorage.app";
 
     @Override
     public Storage createStorage() throws IOException {
@@ -34,6 +34,7 @@ public class FirebaseServiceImpl implements FirebaseService {
     public String uploadOneFile(MultipartFile file, BigInteger id, String folder) throws IOException {
         byte[] fileContent = file.getBytes();
         String originalFilename = file.getOriginalFilename();
+        System.out.println("originalFilename = " + originalFilename);
 
 
         int maxFilenameLength = 250;
@@ -41,6 +42,7 @@ public class FirebaseServiceImpl implements FirebaseService {
         // Tính toán độ dài của phần tiền tố đường dẫn (thư mục + id + dấu gạch chéo "/")
         String pathPrefix = "%s/%s/".formatted(folder, id);
         int pathPrefixLength = pathPrefix.length();
+        System.out.println("pathPrefixLength = " + pathPrefixLength);
 
         // Lấy đuôi file (ví dụ: ".jpg", ".png")
         String fileExtension = "";
@@ -50,6 +52,8 @@ public class FirebaseServiceImpl implements FirebaseService {
             fileExtension = originalFilename.substring(extensionIndex);
             originalFilename = originalFilename.substring(0, extensionIndex); // Cắt bỏ đuôi file khỏi tên gốc để xử lý cắt ngắn
         }
+        System.out.println("fileExtension = " + fileExtension);
+        System.out.println("originalFilename = " + originalFilename);
 
 
         String uuid = UUID.randomUUID().toString();
@@ -62,10 +66,13 @@ public class FirebaseServiceImpl implements FirebaseService {
         if (originalFilename.length() > maxOriginalFilenameLength) {
             originalFilename = originalFilename.substring(0, maxOriginalFilenameLength);
         }
+        System.out.println("originalFilename = " + originalFilename);
 
         // Tạo tên file duy nhất bằng cách thêm UUID trước tên file gốc
         String uniqueFilename = uuid + "_" + originalFilename + fileExtension;
         String fullPath = pathPrefix + uniqueFilename;
+        System.out.println("uniqueFilename = " + uniqueFilename);
+        System.out.println("fullPath = " + fullPath);
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, fullPath)
                 .setContentType(file.getContentType())
