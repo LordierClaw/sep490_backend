@@ -34,3 +34,7 @@ build/
 
 ### Test Report ###
 /htmlReport/
+src/main/resources/sep490-g28-summer24-firebase-adminsdk-do2q8-901df31a42.json
+src/main/resources/application.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-test.yml

@@ -9,25 +9,31 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import vn.com.fpt.sep490_g28_summer2024_be.common.AppConfig;
-import vn.com.fpt.sep490_g28_summer2024_be.dto.casso.ApiCassoResponseDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.casso.TransactionDataDTO;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.donation.DonationResponseDTO;
-import vn.com.fpt.sep490_g28_summer2024_be.entity.*;
-import vn.com.fpt.sep490_g28_summer2024_be.exception.AppException;
-import vn.com.fpt.sep490_g28_summer2024_be.repository.*;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Account;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Campaign;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Challenge;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Donation;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Project;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.Role;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.AccountRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.CampaignRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.ChallengeRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.DonationRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.ProjectRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.RoleRepository;
+import vn.com.fpt.sep490_g28_summer2024_be.repository.WrongDonationRepository;
 import vn.com.fpt.sep490_g28_summer2024_be.service.casso.DefaultCassoService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ActiveProfiles("test")
 @SpringBootTest
 @Transactional
 public class CassoServiceTest {
@@ -219,9 +225,10 @@ public class CassoServiceTest {
     @Test
     @DisplayName("CS_handleOutPayment_01")
     void handleOutPayment_shouldReturnDonationWithoutRefer_whenReferNotExist() {
-        saveTestData();
-
         // Chuẩn bị dữ liệu test
+        donationRepository.deleteAll();
+        wrongDonationRepository.deleteAll();
+        transactionDataDTO.setId(1L);
         transactionDataDTO.setDescription("TID001");
 
         // Thực thi phương thức test
@@ -229,9 +236,9 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
-        assertNotNull(savedDonation);
-        assertNull(savedDonation.getRefer());
+        assertNull(result.getDonationId());
+        assertEquals(0, donationRepository.count());
+        assertEquals(0, wrongDonationRepository.count());
     }
 
     @Test

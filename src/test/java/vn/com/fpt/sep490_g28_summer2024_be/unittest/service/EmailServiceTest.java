@@ -1,4 +1,4 @@
-package vn.com.fpt.sep490_g28_summer2024_be;
+package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import vn.com.fpt.sep490_g28_summer2024_be.common.ErrorCode;
 import vn.com.fpt.sep490_g28_summer2024_be.exception.AppException;
 import vn.com.fpt.sep490_g28_summer2024_be.firebase.FirebaseServiceImpl;
@@ -31,7 +30,7 @@ import static org.mockito.Mockito.*;
 @Transactional
 @MockBean(FirebaseServiceImpl.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DefaultEmailServiceTest {
+public class EmailServiceTest {
     @MockBean
     private JavaMailSender mailSender;
 
