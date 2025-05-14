@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.fpt.sep490_g28_summer2024_be.dto.authentication.UserResponse;
@@ -161,7 +160,7 @@ public class ProjectServiceTest {
     // ==================== View By Filter Tests ====================
 
     @Test
-    @DisplayName("PS_viewByFilter_01: Kiểm tra lọc dự án với kết quả trống")
+    @DisplayName("PS_viewByFilter_01")
     @Rollback
     void testViewByFilter_EmptyResult() {
         // Arrange
@@ -185,7 +184,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_viewByFilter_02: Kiểm tra lọc dự án theo tiêu đề thành công")
+    @DisplayName("PS_viewByFilter_02")
     @Rollback
     void testViewByFilter_FilterByTitle() {
         // Arrange - Tạo campaign
@@ -253,7 +252,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_viewByFilter_03: Kiểm tra lọc dự án theo chiến dịch thành công")
+    @DisplayName("PS_viewByFilter_03")
     @Rollback
     void testViewByFilter_FilterByCampaign() {
         // Arrange - Tạo 2 campaign khác nhau
@@ -332,7 +331,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_viewByFilter_04: Kiểm tra lọc dự án theo nhiều bộ lọc thành công")
+    @DisplayName("PS_viewByFilter_04")
     @Rollback
     void testViewByFilter_FilterByMultipleConditions() {
         // Arrange - Tạo campaign
@@ -418,7 +417,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_viewByFilter_05: Kiểm tra phân trang kết quả")
+    @DisplayName("PS_viewByFilter_05")
     @Rollback
     void testViewByFilter_Pagination() {
         // Arrange - Tạo campaign
@@ -515,7 +514,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_04: Filter by title")
+    @DisplayName("PS_viewProjectsByAccountId_04")
     @Rollback
     void testViewProjectsByAccountId_FilterByTitle() {
         // Tạo project mới với tiêu đề khác để test lọc
@@ -559,7 +558,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_05: Filter by status")
+    @DisplayName("PS_viewProjectsByAccountId_05")
     @Rollback
     void testViewProjectsByAccountId_FilterByStatus() {
         // Project mặc định có status=2, tạo một project với status=3
@@ -603,7 +602,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_06: Filter by province")
+    @DisplayName("PS_viewProjectsByAccountId_06")
     @Rollback
     void testViewProjectsByAccountId_FilterByProvince() {
         // Act - Lọc theo province="Test Province"
@@ -620,7 +619,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_07: Filter by multiple criteria")
+    @DisplayName("PS_viewProjectsByAccountId_07")
     @Rollback
     void testViewProjectsByAccountId_FilterByMultipleCriteria() {
         // Tạo thêm project để test nhiều tiêu chí
@@ -665,7 +664,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_08: No matching results")
+    @DisplayName("PS_viewProjectsByAccountId_08")
     @Rollback
     void testViewProjectsByAccountId_NoMatchingResults() {
         // Act - Lọc với tiêu đề không tồn tại
@@ -679,7 +678,7 @@ public class ProjectServiceTest {
     }
     
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_09: Test pagination")
+    @DisplayName("PS_viewProjectsByAccountId_09")
     @Rollback
     void testViewProjectsByAccountId_Pagination() {
         // Tạo nhiều project để test phân trang
