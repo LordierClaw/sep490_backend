@@ -60,14 +60,8 @@ public class BudgetServiceTest {
 
     }
 
-    /**
-     * BS_viewBudgetByFilter_01
-     * Mục đích: Kiểm tra dự án không tồn tại
-     * Input: page=5, size=10, title="Environment", projectId=-9999
-     * Expected: Ném AppException với ErrorCode.PROJECT_NOT_EXISTED, không có ngân sách nào cho projectId này trong DB
-     */
     @Test
-    @DisplayName("BS_viewBudgetByFilter_01: Dự án không tồn tại")
+    @DisplayName("BS_viewBudgetByFilter_01")
     @Rollback
     void testViewBudgetByFilter_ProjectNotExisted() {
         BigInteger nonExistentProjectId = BigInteger.valueOf(-9999);
@@ -81,96 +75,8 @@ public class BudgetServiceTest {
         assertEquals(0, budgetRepository.findBudgetByFilterAndProjectId(title, nonExistentProjectId, org.springframework.data.domain.PageRequest.of(page, size)).getTotalElements());
     }
 
-    /**
-     * BS_viewBudgetByFilter_02
-     * Mục đích: Lấy thông tin của ngân sách thành công theo bộ lọc
-     * Input: page=5, size=10, title="Environment", projectId=project vừa tạo
-     * Expected: Kết quả trả về danh sách ngân sách theo bộ lọc (PageResponse), đúng dữ liệu, dữ liệu tồn tại trong DB
-     */
     @Test
-    @DisplayName("BS_viewBudgetByFilter_02: Lấy ngân sách thành công theo bộ lọc")
-    @Rollback
-    void testViewBudgetByFilter_Success() {
-        // Tạo dữ liệu Project và nhiều Budget
-        Project project = Project.builder()
-                .title("Test Project")
-                .slug("test-project")
-                .status(1)
-                .totalBudget(new java.math.BigDecimal("1000000"))
-                .amountNeededToRaise(new java.math.BigDecimal("500000"))
-                .ward("Ward 1")
-                .district("District 1")
-                .province("Province 1")
-                .build();
-        project = projectRepository.save(project);
-        // Budget khớp title filter
-        Budget budget1 = Budget.builder()
-                .title("Environment")
-                .unitPrice(new java.math.BigDecimal("10000"))
-                .note("Budget for environment")
-                .status(1)
-                .project(project)
-                .createdAt(java.time.LocalDateTime.now())
-                .updatedAt(java.time.LocalDateTime.now())
-                .build();
-        budgetRepository.save(budget1);
-        // Budget khác title
-        Budget budget2 = Budget.builder()
-                .title("Education")
-                .unitPrice(new java.math.BigDecimal("20000"))
-                .note("Budget for education")
-                .status(1)
-                .project(project)
-                .createdAt(java.time.LocalDateTime.now())
-                .updatedAt(java.time.LocalDateTime.now())
-                .build();
-        budgetRepository.save(budget2);
-        // Budget khác project
-        Project project2 = Project.builder()
-                .title("Other Project")
-                .slug("other-project")
-                .status(1)
-                .totalBudget(new java.math.BigDecimal("500000"))
-                .amountNeededToRaise(new java.math.BigDecimal("200000"))
-                .ward("Ward 2")
-                .district("District 2")
-                .province("Province 2")
-                .build();
-        project2 = projectRepository.save(project2);
-        Budget budget3 = Budget.builder()
-                .title("Environment")
-                .unitPrice(new java.math.BigDecimal("30000"))
-                .note("Budget for environment in other project")
-                .status(1)
-                .project(project2)
-                .createdAt(java.time.LocalDateTime.now())
-                .updatedAt(java.time.LocalDateTime.now())
-                .build();
-        budgetRepository.save(budget3);
-        int page = 5;
-        int size = 10;
-        String title = "Environment";
-        var response = budgetService.viewBudgetByFilter(page, size, title, project.getProjectId());
-        assertNotNull(response);
-        // Chỉ nhận budget1 (title đúng, project đúng)
-        assertEquals(1, response.getContent().size());
-        assertEquals("Environment", response.getContent().get(0).getTitle());
-        assertEquals(project.getTotalBudget(), response.getContent().get(0).getTotalBudget());
-        // Đảm bảo đoạn map(...) đã chạy (có dữ liệu trả về)
-        assertNotNull(response.getContent().get(0).getBudgetId());
-        assertEquals("Budget for environment", response.getContent().get(0).getNote());
-        // Kiểm tra lại database
-        assertTrue(budgetRepository.findBudgetByFilterAndProjectId(title, project.getProjectId(), org.springframework.data.domain.PageRequest.of(page, size)).getTotalElements() > 0);
-    }
-
-    /**
-     * BS_viewBudgetByFilter_02
-     * Mục đích: Lấy thông tin của ngân sách thành công theo bộ lọc (nhiều bản ghi, kiểm tra map)
-     * Input: page=0, size=10, title="Environment", projectId=project vừa tạo
-     * Expected: Kết quả trả về danh sách ngân sách theo bộ lọc (PageResponse), đúng dữ liệu, dữ liệu tồn tại trong DB
-     */
-    @Test
-    @DisplayName("BS_viewBudgetByFilter_02: Lấy ngân sách thành công theo bộ lọc (nhiều bản ghi, kiểm tra map)")
+    @DisplayName("BS_viewBudgetByFilter_02")
     @Rollback
     void testViewBudgetByFilter_Success_MultipleRecords() {
         // Tạo dữ liệu Project và nhiều Budget
@@ -249,14 +155,8 @@ public class BudgetServiceTest {
         assertTrue(budgetRepository.findBudgetByFilterAndProjectId(title, project.getProjectId(), org.springframework.data.domain.PageRequest.of(page, size)).getTotalElements() >= 10);
     }
 
-    /**
-     * BS_getBudgetById_01
-     * Mục đích: Kiểm tra ngân sách không tìm thấy
-     * Input: budgetId = -1 (không tồn tại)
-     * Expected: Ném AppException với ErrorCode.BUDGET_NOT_FOUND, không có bản ghi ngân sách với id này trong DB
-     */
     @Test
-    @DisplayName("BS_getBudgetById_01: Kiểm tra ngân sách không tìm thấy")
+    @DisplayName("BS_getBudgetById_01")
     @Rollback
     void testGetBudgetById_NotFound() {
         BigInteger nonExistentBudgetId = BigInteger.valueOf(-1);
@@ -268,14 +168,8 @@ public class BudgetServiceTest {
         assertFalse(budgetRepository.findById(nonExistentBudgetId).isPresent());
     }
 
-    /**
-     * BS_getBudgetById_02
-     * Mục đích: Lấy thông tin chi tiết ngân sách bằng Id thành công
-     * Input: budgetId = id ngân sách vừa tạo
-     * Expected: Trả về đối tượng BudgetResponseDTO đúng dữ liệu, dữ liệu tồn tại trong DB
-     */
     @Test
-    @DisplayName("BS_getBudgetById_02: Lấy thông tin chi tiết ngân sách bằng Id thành công")
+    @DisplayName("BS_getBudgetById_02")
     @Rollback
     void testGetBudgetById_Success() {
         // Tạo dữ liệu ngân sách
@@ -315,15 +209,8 @@ public class BudgetServiceTest {
         assertTrue(budgetRepository.findById(budget.getBudgetId()).isPresent());
     }
 
-
-    /**
-     * BS_addBudgetsToProject_02
-     * Mục đích: Kiểm tra không tồn tại dự án
-     * Input: Danh sách budgetRequestDTOs, projectId = -9999
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.PROJECT_NOT_EXISTED
-     */
     @Test
-    @DisplayName("BS_addBudgetsToProject_02: Kiểm tra không tồn tại dự án")
+    @DisplayName("BS_addBudgetsToProject_02")
     @Rollback
     void testAddBudgetsToProject_ProjectNotExisted() {
         // Setup SecurityContextHolder với user hợp lệ
@@ -359,15 +246,8 @@ public class BudgetServiceTest {
         assertEquals(0, budgetRepository.findBudgetByFilterAndProjectId("Budget Not Exist Project", projectId, org.springframework.data.domain.PageRequest.of(0, 10)).getTotalElements());
     }
 
-    /**
-     * BS_addBudgetsToProject_01
-     * Mục đích: Kiểm tra lỗi không xác nhận được người dùng (Authentication có nhưng principal là null hoặc không hợp lệ)
-     * Input: Danh sách budgetRequestDTOs, projectId hợp lệ
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.HTTP_UNAUTHORIZED
-     * Đảm bảo phủ code: CustomAccountDetails customAccountDetails = (CustomAccountDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-     */
     @Test
-    @DisplayName("BS_addBudgetsToProject_01: Kiểm tra lỗi không xác nhận được người dùng (principal không hợp lệ)")
+    @DisplayName("BS_addBudgetsToProject_01")
     @Rollback
     void testAddBudgetsToProject_Unauthorized_PrincipalInvalid() {
         // Tạo project hợp lệ
@@ -404,14 +284,8 @@ public class BudgetServiceTest {
         assertEquals(0, budgetRepository.findBudgetByFilterAndProjectId("Unauthorized Budget", projectId, org.springframework.data.domain.PageRequest.of(0, 10)).getTotalElements());
     }
 
-    /**
-     * BS_addBudgetsToProject_03
-     * Mục đích: Kiểm tra người dùng không có quyền thêm mới danh sách ngân hàng (budget) vào project
-     * Input: Danh sách budgetRequestDTOs, projectId hợp lệ, user role không phải admin/không thuộc assign của project
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.ACCESS_DENIED
-     */
     @Test
-    @DisplayName("BS_addBudgetsToProject_03: Kiểm tra người dùng không có quyền thêm mới danh sách ngân hàng")
+    @DisplayName("BS_addBudgetsToProject_03")
     @Rollback
     void testAddBudgetsToProject_AccessDenied() {
         // Tạo role USER
@@ -459,14 +333,8 @@ public class BudgetServiceTest {
         assertEquals(0, budgetRepository.findBudgetByFilterAndProjectId("Denied Budget", projectId, org.springframework.data.domain.PageRequest.of(0, 10)).getTotalElements());
     }
 
-    /**
-     * BS_addBudgetsToProject_04
-     * Mục đích: Tạo mới danh sách ngân hàng vào dự án thành công
-     * Input: Danh sách budgetRequestDTOs, projectId hợp lệ, user có quyền (admin)
-     * Expected: Thêm mới dữ liệu budget, project; Trả về đúng đối tượng budgetResponseDTOs
-     */
     @Test
-    @DisplayName("BS_addBudgetsToProject_04: Tạo mới danh sách ngân hàng vào dự án thành công")
+    @DisplayName("BS_addBudgetsToProject_04")
     @Rollback
     void testAddBudgetsToProject_Success() {
         // Tạo role ADMIN
@@ -517,14 +385,8 @@ public class BudgetServiceTest {
         assertEquals(1, budgetRepository.findBudgetByFilterAndProjectId("Success Budget", projectId, org.springframework.data.domain.PageRequest.of(0, 10)).getTotalElements());
     }
 
-    /**
-     * BS_updateBudget_01
-     * Mục đích: Kiểm tra lỗi không xác nhận được người dùng
-     * Input: budgetId hợp lệ, budgetRequestDTO.title = "Health", không có authentication
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.HTTP_UNAUTHORIZED
-     */
     @Test
-    @DisplayName("BS_updateBudget_01: Kiểm tra lỗi không xác nhận được người dùng")
+    @DisplayName("BS_updateBudget_01")
     @Rollback
     void testUpdateBudget_Unauthorized() {
         // Tạo role ADMIN
@@ -584,14 +446,8 @@ public class BudgetServiceTest {
         assertEquals(new java.math.BigDecimal("88888"), unchanged.getUnitPrice());
     }
 
-    /**
-     * BS_updateBudget_02
-     * Mục đích: Kiểm tra không tồn tại ngân sách
-     * Input: budgetId không tồn tại, budgetRequestDTO.title = "Health"
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.BUDGET_NOT_FOUND
-     */
     @Test
-    @DisplayName("BS_updateBudget_02: Kiểm tra không tồn tại ngân sách")
+    @DisplayName("BS_updateBudget_02")
     @Rollback
     void testUpdateBudget_BudgetNotFound() {
         // Tạo role ADMIN
@@ -627,14 +483,8 @@ public class BudgetServiceTest {
         assertEquals(ErrorCode.BUDGET_NOT_FOUND, thrown.getErrorCode());
     }
 
-    /**
-     * BS_updateBudget_03
-     * Mục đích: Kiểm tra người dùng không có quyền cập nhật ngân sách
-     * Input: budgetId hợp lệ, budgetRequestDTO.title = "Health", user không phải admin, không thuộc assigns của project
-     * Expected: Không có data được ghi lại vào database, ném AppException với ErrorCode.ACCESS_DENIED
-     */
     @Test
-    @DisplayName("BS_updateBudget_03: Kiểm tra người dùng không có quyền cập nhật ngân sách")
+    @DisplayName("BS_updateBudget_03")
     @Rollback
     void testUpdateBudget_AccessDenied() {
         // Tạo role USER
@@ -694,14 +544,8 @@ public class BudgetServiceTest {
         assertEquals(new java.math.BigDecimal("1000"), unchanged.getUnitPrice());
     }
 
-    /**
-     * BS_updateBudget_04
-     * Mục đích: Kiểm tra cập nhật thông tin ngân sách thành công
-     * Input: budgetId hợp lệ, budgetRequestDTO.title = "Health", user là admin
-     * Expected: Lưu data vào database, trả về đối tượng budgetResponseDTO
-     */
     @Test
-    @DisplayName("BS_updateBudget_04: Kiểm tra cập nhật thông tin ngân sách thành công")
+    @DisplayName("BS_updateBudget_04")
     @Rollback
     void testUpdateBudget_Success() {
         // Tạo role ADMIN
@@ -763,14 +607,8 @@ public class BudgetServiceTest {
         assertEquals(new java.math.BigDecimal("2000"), updated.getUnitPrice());
     }
 
-    /**
-     * BS_deleteBudget_01
-     * Mục đích: Kiểm tra lỗi không xác nhận được người dùng khi xóa ngân sách
-     * Input: budgetId hợp lệ, không có authentication
-     * Expected: Không có data được xóa khỏi database, ném AppException với ErrorCode.HTTP_UNAUTHORIZED
-     */
     @Test
-    @DisplayName("BS_deleteBudget_01: Kiểm tra lỗi không xác nhận được người dùng khi xóa ngân sách")
+    @DisplayName("BS_deleteBudget_01")
     @Rollback
     void testDeleteBudget_Unauthorized() {
         // Tạo role ADMIN
@@ -820,14 +658,8 @@ public class BudgetServiceTest {
         assertTrue(budgetRepository.findById(budgetId).isPresent());
     }
 
-    /**
-     * BS_deleteBudget_02
-     * Mục đích: Kiểm tra không tồn tại ngân sách khi xóa
-     * Input: budgetId không tồn tại
-     * Expected: Không có data được xóa khỏi database, ném AppException với ErrorCode.BUDGET_NOT_FOUND
-     */
     @Test
-    @DisplayName("BS_deleteBudget_02: Kiểm tra không tồn tại ngân sách khi xóa")
+    @DisplayName("BS_deleteBudget_02")
     @Rollback
     void testDeleteBudget_BudgetNotFound() {
         // Tạo role ADMIN
@@ -856,14 +688,8 @@ public class BudgetServiceTest {
         assertEquals(ErrorCode.BUDGET_NOT_FOUND, thrown.getErrorCode());
     }
 
-    /**
-     * BS_deleteBudget_03
-     * Mục đích: Kiểm tra người dùng không có quyền xóa ngân sách
-     * Input: budgetId hợp lệ, user không phải admin, không thuộc assigns của project
-     * Expected: Không có data được xóa khỏi database, ném AppException với ErrorCode.ACCESS_DENIED
-     */
     @Test
-    @DisplayName("BS_deleteBudget_03: Kiểm tra người dùng không có quyền xóa ngân sách")
+    @DisplayName("BS_deleteBudget_03")
     @Rollback
     void testDeleteBudget_AccessDenied() {
         // Tạo role USER
@@ -913,14 +739,8 @@ public class BudgetServiceTest {
         assertTrue(budgetRepository.findById(budgetId).isPresent());
     }
 
-    /**
-     * BS_deleteBudget_04
-     * Mục đích: Kiểm tra xóa ngân sách khỏi dự án thành công
-     * Input: budgetId hợp lệ, user là admin
-     * Expected: Lưu data vào database (budget bị xóa khỏi DB)
-     */
     @Test
-    @DisplayName("BS_deleteBudget_04: Kiểm tra xóa ngân sách khỏi dự án thành công")
+    @DisplayName("BS_deleteBudget_04")
     @Rollback
     void testDeleteBudget_Success() {
         // Tạo role ADMIN

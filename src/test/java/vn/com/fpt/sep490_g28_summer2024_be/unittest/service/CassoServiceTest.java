@@ -3,6 +3,7 @@ package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import okhttp3.OkHttpClient;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import vn.com.fpt.sep490_g28_summer2024_be.entity.Challenge;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Donation;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Project;
 import vn.com.fpt.sep490_g28_summer2024_be.entity.Role;
+import vn.com.fpt.sep490_g28_summer2024_be.entity.WrongDonation;
 import vn.com.fpt.sep490_g28_summer2024_be.repository.AccountRepository;
 import vn.com.fpt.sep490_g28_summer2024_be.repository.CampaignRepository;
 import vn.com.fpt.sep490_g28_summer2024_be.repository.ChallengeRepository;
@@ -239,6 +241,7 @@ public class CassoServiceTest {
         // Kiểm tra kết quả
         assertNotNull(result);
         assertNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
         assertEquals(0, donationRepository.count());
         assertEquals(0, wrongDonationRepository.count());
     }
@@ -249,8 +252,8 @@ public class CassoServiceTest {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
-        donationRepository.save(existingDonation);
         existingDonation.setProject(null);
+        donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
         // Thực thi phương thức test
@@ -258,11 +261,13 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
-        Long count = entityManager.createQuery(
-                        "SELECT COUNT(d) FROM Donation d WHERE d.donationId = :donationId AND d.project IS NULL", Long.class)
-                .setParameter("donationId", result.getDonationId())
-                .getSingleResult();
-        assertTrue(count > 0);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
+
+        Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
+        assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
+        assertNull(savedDonation.getProject());
     }
 
     @Test
@@ -271,8 +276,8 @@ public class CassoServiceTest {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
-        donationRepository.save(existingDonation);
         existingDonation.setChallenge(null);
+        donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
         // Thực thi phương thức test
@@ -280,8 +285,12 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
+
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
         assertNull(savedDonation.getChallenge());
     }
 
@@ -291,8 +300,8 @@ public class CassoServiceTest {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
-        donationRepository.save(existingDonation);
         existingDonation.setTransferredProject(null);
+        donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
         // Thực thi phương thức test
@@ -300,8 +309,12 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
+
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
         assertNull(savedDonation.getTransferredProject());
     }
 
@@ -311,8 +324,8 @@ public class CassoServiceTest {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
-        donationRepository.save(existingDonation);
         existingDonation.setRefer(null);
+        donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
         // Thực thi phương thức test
@@ -320,8 +333,12 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
+
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
         assertNull(savedDonation.getRefer());
     }
 
@@ -331,6 +348,8 @@ public class CassoServiceTest {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
+        existingDonation.setWrongDonation(null);
+        wrongDonationRepository.deleteAll();
         donationRepository.save(existingDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
@@ -339,17 +358,24 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
+        assertNull(savedDonation.getWrongDonation());
+        assertEquals(0, wrongDonationRepository.count());
     }
 
     @Test
     @DisplayName("CS_handleOutPayment_07")
-    void handleOutPayment_shouldReturnDonationWithAllInformation_whenReferExists() {
+    void handleOutPayment_shouldReturnDonationWithAllInformation_whenWrongDonationExists() {
         saveTestData();
 
         // Chuẩn bị dữ liệu test
+        WrongDonation wrongDonation = WrongDonation.builder().donation(existingDonation).build();
         donationRepository.save(existingDonation);
+        wrongDonationRepository.save(wrongDonation);
         transactionDataDTO.setDescription(existingDonation.getTid());
 
         // Thực thi phương thức test
@@ -357,10 +383,19 @@ public class CassoServiceTest {
 
         // Kiểm tra kết quả
         assertNotNull(result);
+        assertNotNull(result.getDonationId());
+        assertEquals(transactionDataDTO.getAmount(), result.getValue());
+
         Donation savedDonation = donationRepository.findById(result.getDonationId()).orElse(null);
         assertNotNull(savedDonation);
+        assertEquals(transactionDataDTO.getAmount(), savedDonation.getValue());
         assertNotNull(savedDonation.getProject());
         assertNotNull(savedDonation.getChallenge());
         assertNotNull(savedDonation.getRefer());
+        assertNotNull(savedDonation.getWrongDonation());
+
+        WrongDonation savedWrongDonation = wrongDonationRepository.findById(savedDonation.getWrongDonation().getWrongDonationId()).orElse(null);
+        assertNotNull(savedWrongDonation);
+        assertEquals(savedDonation.getDonationId(), savedWrongDonation.getDonation().getDonationId());
     }
 }
