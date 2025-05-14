@@ -283,9 +283,10 @@ public class AuthenticationServiceTest {
     void refreshToken_shouldThrowsAppExceptionWhenTokenInvalid() {
         var httpServletRequest = new MockHttpServletRequest();
         var refreshRequest = new RefreshTokenRequest("invalid.token.value");
-        Exception ex = assertThrows(Exception.class, () ->
+        AppException ex = assertThrows(AppException.class, () ->
                 authenticationService.refreshToken(refreshRequest, httpServletRequest)
         );
+        assertEquals(ErrorCode.HTTP_UNAUTHORIZED, ex.getErrorCode());
     }
 
     @Test
@@ -325,9 +326,10 @@ public class AuthenticationServiceTest {
         String expiredRefreshToken = jwsObject.serialize();
         var httpServletRequest = new MockHttpServletRequest();
         var refreshRequest = new RefreshTokenRequest(expiredRefreshToken);
-        Exception ex = assertThrows(Exception.class, () ->
+        AppException ex = assertThrows(AppException.class, () ->
                 authenticationService.refreshToken(refreshRequest, httpServletRequest)
         );
+        assertEquals(ErrorCode.HTTP_UNAUTHORIZED, ex.getErrorCode());
     }
 
     @Test
