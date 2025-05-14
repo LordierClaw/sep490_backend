@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Service
 public class FirebaseServiceImpl implements FirebaseService {
-    private final String bucketName = "sep490-3d1d7.appspot.com";
+    private final String bucketName = "sep490-3d1d7.firebasestorage.app";
 
     @Override
     public Storage createStorage() throws IOException {

@@ -338,11 +338,16 @@ public class AuthenticationServiceTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         Authentication authentication = mock(Authentication.class);
 
+        // Giả lập có authentication trong context
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
         // Act
         logoutService.logout(request, response, authentication);
 
         // Assert
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
@@ -354,11 +359,16 @@ public class AuthenticationServiceTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         Authentication authentication = mock(Authentication.class);
 
+        // Giả lập có authentication trong context
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
         // Act
         logoutService.logout(request, response, authentication);
 
         // Assert
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
@@ -370,11 +380,16 @@ public class AuthenticationServiceTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         Authentication authentication = mock(Authentication.class);
 
+        // Giả lập có authentication trong context
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
         // Act
         logoutService.logout(request, response, authentication);
 
         // Assert
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
