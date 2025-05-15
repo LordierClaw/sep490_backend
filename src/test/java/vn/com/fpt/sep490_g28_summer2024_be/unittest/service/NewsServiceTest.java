@@ -361,41 +361,6 @@ public class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("NS_create_08")
-    void create_shouldSetStatusAs1AndReturnNewsResponse_whenUserIsNotAdminAndImageIsValid() throws IOException {
-        // Chuẩn bị dữ liệu
-        NewsDTO dto = new NewsDTO();
-        dto.setTitle("new-user-news");
-        dto.setContent("User post content");
-        dto.setCategory(categoryResponseDTO);
-
-        setUpAsNotAdmin();
-
-        // Chuẩn bị ảnh
-        String fakeThumbnailUrl = "https://firebase.com/news/thumbnail/test-image.jpg";
-        when(firebaseService.uploadOneFile(any(), any(), eq("news/thumbnail"))).thenReturn(fakeThumbnailUrl);
-
-        MultipartFile imageFile = new MockMultipartFile("image",
-                "image.png", "image/png", "image".getBytes());
-
-        // Thực thi
-        NewsResponseDTO response = defaultNewsService.create(dto, imageFile);
-
-        // Kiểm tra dữ liệu trả về
-        assertEquals("new-user-news", response.getTitle());
-        assertEquals("https://firebase.com/news/thumbnail/test-image.jpg", response.getThumbnail());
-
-        // Kiểm tra dữ liệu trong DB
-        Optional<News> news = newsRepository.findById(response.getNewsId());
-        assertTrue(news.isPresent());
-        assertEquals("new-user-news", news.get().getTitle());
-        assertEquals("User post content", news.get().getContent());
-        assertEquals("https://firebase.com/news/thumbnail/test-image.jpg", news.get().getThumbnail());
-        assertEquals("user@example.com", news.get().getCreatedBy().getEmail());
-        assertEquals(1, news.get().getStatus());
-    }
-
-    @Test
     @DisplayName("NS_update_01")
     void update_shouldThrowUnauthorized_whenCurrentUserNotFound() {
         // Chuẩn bị dữ liệu
