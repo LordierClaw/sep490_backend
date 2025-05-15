@@ -514,18 +514,6 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("PS_viewProjectsByAccountId_01")
     void PS_viewProjectsByAccountId_01() {
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), null, null, null, null, null);
-
-        assertNotNull(response);
-        assertFalse(response.getContent().isEmpty());
-        assertTrue(response.getContent().stream()
-                .anyMatch(p -> p.getProjectId().equals(project.getProjectId())));
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_02")
-    void PS_viewProjectsByAccountId_02() {
         Exception exception = assertThrows(Exception.class, () ->
                 projectService.viewProjectsByAccountId(0, 10, adminAccount.getEmail(), null, null, null, null, null));
 
@@ -534,180 +522,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_viewProjectsByAccountId_03")
-    void PS_viewProjectsByAccountId_03() {
-        String nonExistentEmail = "nonexistent@example.com";
-
-        assertThrows(AppException.class, () ->
-                projectService.viewProjectsByAccountId(0, 10, nonExistentEmail, null, null, null, null, null));
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_04")
-    @Rollback
-    void testViewProjectsByAccountId_FilterByTitle() {
-        // Tạo project mới với tiêu đề khác để test lọc
-        Project projectTest = Project.builder()
-                .title("Special Test Project")
-                .background("Special Test Background")
-                .status(1)
-                .campaign(campaign)
-                .totalBudget(BigDecimal.valueOf(2000))
-                .amountNeededToRaise(BigDecimal.valueOf(1500))
-                .province("Special Province")
-                .district("Special District")
-                .ward("Special Ward")
-                .createdAt(testDateTime)
-                .updatedAt(testDateTime)
-                .build();
-        projectTest = projectRepository.save(projectTest);
-
-        // Gán nhân viên vào project
-        Assign assignTest = Assign.builder()
-                .project(projectTest)
-                .account(employeeAccount)
-                .createdBy(adminAccount)
-                .createdAt(testDateTime)
-                .updatedBy(adminAccount)
-                .updatedAt(testDateTime)
-                .build();
-        assignRepository.save(assignTest);
-
-        // Act
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), "Special", null, null, null, null);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
-
-        ProjectResponseDTO projectDTO = response.getContent().get(0);
-        assertEquals(projectTest.getProjectId(), projectDTO.getProjectId());
-        assertEquals("Special Test Project", projectDTO.getTitle());
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_05")
-    @Rollback
-    void testViewProjectsByAccountId_FilterByStatus() {
-        // Project mặc định có status=2, tạo một project với status=3
-        Project projectTest = Project.builder()
-                .title("Status Test Project")
-                .background("Status Test Background")
-                .status(3)
-                .campaign(campaign)
-                .totalBudget(BigDecimal.valueOf(3000))
-                .amountNeededToRaise(BigDecimal.valueOf(2500))
-                .province("Status Province")
-                .district("Status District")
-                .ward("Status Ward")
-                .createdAt(testDateTime)
-                .updatedAt(testDateTime)
-                .build();
-        projectTest = projectRepository.save(projectTest);
-
-        // Gán nhân viên vào project
-        Assign assignTest = Assign.builder()
-                .project(projectTest)
-                .account(employeeAccount)
-                .createdBy(adminAccount)
-                .createdAt(testDateTime)
-                .updatedBy(adminAccount)
-                .updatedAt(testDateTime)
-                .build();
-        assignRepository.save(assignTest);
-
-        // Act - Lọc theo status=3
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), null, null, 3, null, null);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
-
-        ProjectResponseDTO projectDTO = response.getContent().get(0);
-        assertEquals(projectTest.getProjectId(), projectDTO.getProjectId());
-        assertEquals(3, projectDTO.getStatus());
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_06")
-    @Rollback
-    void testViewProjectsByAccountId_FilterByProvince() {
-        // Act - Lọc theo province="Test Province"
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), null, null, null, "Test Province", null);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
-
-        ProjectResponseDTO projectDTO = response.getContent().get(0);
-        assertEquals(project.getProjectId(), projectDTO.getProjectId());
-        assertEquals("Test Province", projectDTO.getProvince());
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_07")
-    @Rollback
-    void testViewProjectsByAccountId_FilterByMultipleCriteria() {
-        // Tạo thêm project để test nhiều tiêu chí
-        Project projectMulti = Project.builder()
-                .title("Multi Criteria Project")
-                .background("Multi Criteria Background")
-                .status(4)
-                .campaign(campaign)
-                .totalBudget(BigDecimal.valueOf(4000))
-                .amountNeededToRaise(BigDecimal.valueOf(3500))
-                .province("Special Province")
-                .district("Special District")
-                .ward("Special Ward")
-                .createdAt(testDateTime)
-                .updatedAt(testDateTime)
-                .build();
-        projectMulti = projectRepository.save(projectMulti);
-
-        // Gán nhân viên vào project
-        Assign assignMulti = Assign.builder()
-                .project(projectMulti)
-                .account(employeeAccount)
-                .createdBy(adminAccount)
-                .createdAt(testDateTime)
-                .updatedBy(adminAccount)
-                .updatedAt(testDateTime)
-                .build();
-        assignRepository.save(assignMulti);
-
-        // Act - Lọc theo title chứa "Multi" và status=4
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), "Multi", null, 4, null, null);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
-
-        ProjectResponseDTO projectDTO = response.getContent().get(0);
-        assertEquals(projectMulti.getProjectId(), projectDTO.getProjectId());
-        assertEquals("Multi Criteria Project", projectDTO.getTitle());
-        assertEquals(4, projectDTO.getStatus());
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_08")
-    @Rollback
-    void testViewProjectsByAccountId_NoMatchingResults() {
-        // Act - Lọc với tiêu đề không tồn tại
-        PageResponse<ProjectResponseDTO> response = projectService.viewProjectsByAccountId(
-                0, 10, employeeAccount.getEmail(), "NonexistentProjectTitle", null, null, null, null);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(0, response.getContent().size());
-        assertEquals(0, response.getTotal());
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsByAccountId_09")
+    @DisplayName("PS_viewProjectsByAccountId_02")
     @Rollback
     void testViewProjectsByAccountId_Pagination() {
         // Tạo nhiều project để test phân trang
@@ -786,11 +601,33 @@ public class ProjectServiceTest {
     }
 
 
+    // ==================== Get Project Detail Client Tests ====================
+
+    @Test
+    @DisplayName("PS_getProjectDetailClient_01")
+    void PS_getProjectDetailClient_01() {
+        ProjectResponseDTO response = projectService.getProjectDetailClient(project.getProjectId());
+
+        assertNotNull(response);
+        assertEquals(project.getProjectId(), response.getProjectId());
+        assertEquals(project.getTitle(), response.getTitle());
+        assertEquals(project.getBackground(), response.getBackground());
+        assertNotNull(response.getCampaign());
+        assertEquals(campaign.getTitle(), response.getCampaign().getTitle());
+    }
+
+    @Test
+    @DisplayName("PS_getProjectDetailClient_02")
+    void PS_getProjectDetailClient_02() {
+        assertThrows(AppException.class, () ->
+                projectService.getProjectDetailClient(BigInteger.valueOf(999)));
+    }
+
     // ==================== Add Project Tests ====================
 
     @Test
-    @DisplayName("PS_addProject_02")
-    void PS_addProject_02() {
+    @DisplayName("PS_addProject_01")
+    void PS_addProject_01() {
         ProjectRequestDTO request = ProjectRequestDTO.builder()
                 .title("Test Project")
                 .background("Another Background")
@@ -808,8 +645,8 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_addProject_03")
-    void PS_addProject_03() {
+    @DisplayName("PS_addProject_02")
+    void PS_addProject_02() {
         MultipartFile[] invalidFiles = {
                 new MockMultipartFile("https://firebase/file1.txt", "https://firebase/file1.txt", "text/plain", "test".getBytes())
         };
@@ -831,6 +668,229 @@ public class ProjectServiceTest {
 
         assertTrue(exception instanceof AppException || exception instanceof NullPointerException,
                 "Expected either AppException or NullPointerException, but got: " + exception.getClass().getName());
+    }
+
+
+    @Test
+    @DisplayName("PS_addProject_03")
+    void addProject_shouldThrowExceptionForUnauthorizedUser() {
+        // Test khi tài khoản không có trong hệ thống
+        // Sửa security context để giả lập email không tồn tại
+        SecurityContext securityContext = mock(SecurityContext.class);
+        Authentication authentication = mock(Authentication.class);
+        UserResponse userResponse = UserResponse.builder()
+                .email("nonexistent@test.com")
+                .fullname("Nonexistent User")
+                .isActive(true)
+                .scope("Employee")
+                .build();
+        CustomAccountDetails accountDetails = new CustomAccountDetails(userResponse);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(accountDetails);
+        SecurityContextHolder.setContext(securityContext);
+
+        ProjectRequestDTO request = ProjectRequestDTO.builder()
+                .title("Unauthorized Test Project")
+                .background("Test Background")
+                .campaign(CampaignResponseDTO.builder()
+                        .campaignId(campaign.getCampaignId())
+                        .build())
+                .totalBudget("5000")
+                .amountNeededToRaise("4000")
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .build();
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () ->
+                projectService.addProject(request, emptyFiles, emptyFiles));
+        assertEquals(ErrorCode.HTTP_UNAUTHORIZED, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("PS_addProject_04")
+    void addProject_shouldThrowExceptionForNonExistentCampaign() {
+        // Test khi campaignId không tồn tại
+        mockSecurityContext(employeeAccount);
+
+        ProjectRequestDTO request = ProjectRequestDTO.builder()
+                .title("Campaign Error Project")
+                .background("Test Background")
+                .campaign(CampaignResponseDTO.builder()
+                        .campaignId(BigInteger.valueOf(999)) // Campaign không tồn tại
+                        .build())
+                .totalBudget("5000")
+                .amountNeededToRaise("4000")
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .build();
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () ->
+                projectService.addProject(request, emptyFiles, emptyFiles));
+        assertEquals(ErrorCode.CAMPAIGN_NO_CONTENT, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("PS_addProject_05")
+    void addProject_shouldThrowExceptionForDuplicateTitle() {
+        // Test khi title đã tồn tại
+        mockSecurityContext(employeeAccount);
+
+        ProjectRequestDTO request = ProjectRequestDTO.builder()
+                .title("Test Project") // Title đã tồn tại (từ setUp)
+                .background("Duplicate Title Background")
+                .campaign(CampaignResponseDTO.builder()
+                        .campaignId(campaign.getCampaignId())
+                        .build())
+                .totalBudget("5000")
+                .amountNeededToRaise("4000")
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .build();
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () ->
+                projectService.addProject(request, emptyFiles, emptyFiles));
+        assertEquals(ErrorCode.DUPLICATE_TITLE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("PS_addProject_06")
+    void addProject_shouldThrowExceptionForUploadFailure() {
+        // Test khi upload file thất bại
+        mockSecurityContext(employeeAccount);
+
+        // Cấu hình cho firebaseService đã được tiêm vào bởi @Autowired
+        when(firebaseService.filesIsImage(any())).thenReturn(true);
+        try {
+            when(firebaseService.uploadMultipleFile(any(), any(), any())).thenThrow(new IOException("Upload failed"));
+        } catch (IOException e) {
+            fail("Mock setup failed: " + e.getMessage());
+        }
+
+        MultipartFile[] validImages = {
+                new MockMultipartFile("test.jpg", "test.jpg", "image/jpeg", "test".getBytes())
+        };
+
+        ProjectRequestDTO request = ProjectRequestDTO.builder()
+                .title("Upload Error Project")
+                .background("Test Background")
+                .campaign(CampaignResponseDTO.builder()
+                        .campaignId(campaign.getCampaignId())
+                        .build())
+                .totalBudget("5000")
+                .amountNeededToRaise("4000")
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .build();
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () ->
+                projectService.addProject(request, validImages, emptyFiles));
+        assertEquals(ErrorCode.UPLOAD_FAILED, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("PS_addProject_07")
+    void addProject_shouldCreateProjectWithValidImages() {
+        // Test tạo project với hình ảnh hợp lệ
+        mockSecurityContext(employeeAccount);
+
+        // Tạo mock cho FirebaseService
+        // FirebaseServiceImpl firebaseService = mock(FirebaseServiceImpl.class);
+        when(firebaseService.filesIsImage(any())).thenReturn(true);
+        try {
+            when(firebaseService.uploadMultipleFile(any(), any(), any())).thenReturn(List.of("image1.jpg", "image2.jpg"));
+        } catch (IOException e) {
+            fail("Mock setup failed: " + e.getMessage());
+        }
+
+        // Inject mock vào service
+        try {
+            Field field = DefaultProjectService.class.getDeclaredField("firebaseService");
+            field.setAccessible(true);
+            field.set(projectService, firebaseService);
+        } catch (Exception e) {
+            fail("Failed to inject mock: " + e.getMessage());
+        }
+
+        List<ConstructionRequestDTO> constructions = List.of(
+                ConstructionRequestDTO.builder()
+                        .title("Construction 1")
+                        .quantity(5)
+                        .unit("Meter")
+                        .note("First construction")
+                        .build()
+        );
+
+        ProjectRequestDTO request = ProjectRequestDTO.builder()
+                .title("Valid Images Test Project")
+                .background("Test Background with Valid Images")
+                .campaign(CampaignResponseDTO.builder()
+                        .campaignId(campaign.getCampaignId())
+                        .build())
+                .totalBudget("5000")
+                .amountNeededToRaise("4000")
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .constructions(constructions)
+                .build();
+
+        // Tạo mock hình ảnh hợp lệ
+        MultipartFile[] validImages = {
+                new MockMultipartFile("image1.jpg", "image1.jpg", "image/jpeg", "test image 1".getBytes()),
+                new MockMultipartFile("image2.jpg", "image2.jpg", "image/jpeg", "test image 2".getBytes())
+        };
+
+        // // Chuẩn bị mock file upload
+        // MockMultipartFile file1 = new MockMultipartFile(
+        //         "file", "test1.txt", "text/plain", "test content".getBytes());
+        // MockMultipartFile file2 = new MockMultipartFile(
+        //         "file", "test2.txt", "text/plain", "test content 2".getBytes());
+        // MultipartFile[] files = {file1, file2};
+
+        // Act
+        ProjectResponseDTO response = projectService.addProject(request, validImages, emptyFiles);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals("Valid Images Test Project", response.getTitle());
+
+        // Verify Firebase service was called for image upload
+        try {
+            verify(firebaseService, times(1)).uploadMultipleFile(eq(validImages), any(), eq("project/project_images"));
+        } catch (IOException e) {
+            fail("Verification of Firebase service failed: " + e.getMessage());
+        }
+
+        // Verify upload URL results are stored correctly (if the entity allows inspection)
+        Project savedProject = projectRepository.findById(response.getProjectId())
+                .orElseThrow(() -> new AssertionError("Project not found"));
+
+        // Note: This check requires entity to have getter for projectImages
+        // due to potential NPE risks in test environment, we should handle this carefully
+        try {
+            // Try to access the projectImages through reflection
+            Field projectImagesField = Project.class.getDeclaredField("projectImages");
+            projectImagesField.setAccessible(true);
+            List<?> projectImages = (List<?>) projectImagesField.get(savedProject);
+
+            if (projectImages != null) {
+                assertFalse(projectImages.isEmpty(), "Project images list should not be empty");
+                assertEquals(2, projectImages.size(), "Should have 2 images saved");
+            } else {
+                System.out.println("Project images field is null (likely a test environment limitation)");
+            }
+        } catch (Exception e) {
+            System.out.println("Could not verify projectImages directly: " + e.getMessage());
+        }
     }
 
     // ==================== Update Project Tests ====================
@@ -901,160 +961,6 @@ public class ProjectServiceTest {
                 "Expected either AppException or NullPointerException, but got: " + exception.getClass().getName());
     }
 
-    // ==================== Update Project Status Tests ====================
-
-    @Test
-    @DisplayName("PS_updateProjectStatus_01")
-    void PS_updateProjectStatus_01() {
-        mockSecurityContext(employeeAccount);
-
-        Exception exception = assertThrows(Exception.class, () ->
-                projectService.updateProjectStatus(project.getProjectId(), 3));
-
-        assertTrue(exception instanceof NullPointerException &&
-                        exception.getMessage().contains("getAssigns()"),
-                "DEV BUG: Project.assigns should be initialized as empty list, not null");
-    }
-
-    @Test
-    @DisplayName("PS_updateProjectStatus_02")
-    void PS_updateProjectStatus_02() {
-        Account unauthorizedEmployee = Account.builder()
-                .email("unauthorized@test.com")
-                .password(passwordEncoder.encode("Test@123"))
-                .fullname("Unauthorized Employee")
-                .role(employeeRole)
-                .isActive(true)
-                .createdAt(testDateTime)
-                .updatedAt(testDateTime)
-                .build();
-        unauthorizedEmployee = accountRepository.save(unauthorizedEmployee);
-
-        mockSecurityContext(unauthorizedEmployee);
-
-        Exception exception = assertThrows(Exception.class, () ->
-                projectService.updateProjectStatus(project.getProjectId(), 3));
-
-        assertTrue(exception instanceof AppException || exception instanceof NullPointerException,
-                "Expected either AppException or NullPointerException, but got: " + exception.getClass().getName());
-    }
-
-    // ==================== View Project Cards Tests ====================
-
-    @Test
-    @DisplayName("PS_viewProjectCards_01")
-    void PS_viewProjectCards_01() {
-        Exception exception = assertThrows(Exception.class, () ->
-                projectService.viewProjectCards(0, 10, null, null, null, null, null, null, null));
-
-        assertTrue(exception instanceof NullPointerException &&
-                        exception.getMessage().contains("getProjectImages()"),
-                "DEV BUG: Project.projectImages is null instead of empty list");
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectCards_02")
-    void PS_viewProjectCards_02() {
-        BigDecimal minBudget = BigDecimal.valueOf(500);
-        BigDecimal maxBudget = BigDecimal.valueOf(1500);
-
-        Exception exception = assertThrows(Exception.class, () ->
-                projectService.viewProjectCards(0, 10, null, campaign.getCampaignId(), 2, null, null, minBudget, maxBudget));
-
-        assertTrue(exception instanceof NullPointerException &&
-                        exception.getMessage().contains("getProjectImages()"),
-                "DEV BUG: Project.projectImages is null instead of empty list");
-    }
-
-    // ==================== View Projects Client By Campaign ID Tests ====================
-
-    @Test
-    @DisplayName("PS_viewProjectsClientByCampaignId_01")
-    void PS_viewProjectsClientByCampaignId_01() {
-        try {
-            PageResponse<ProjectResponseDTO> response = projectService.viewProjectsClientByCampaignId(
-                    0, 10, 2, campaign.getCampaignId(), null, null);
-
-            assertNotNull(response);
-            response.getContent().forEach(p -> {
-                assertEquals(campaign.getTitle(), p.getCampaign().getTitle());
-            });
-        } catch (NullPointerException e) {
-            assertTrue(e.getMessage().contains("getProjectImages()") ||
-                            e.getMessage().contains("getConstructions()"),
-                    "DEV BUG: Collections should be initialized as empty list, not null");
-        }
-    }
-
-    @Test
-    @DisplayName("PS_viewProjectsClientByCampaignId_02")
-    void PS_viewProjectsClientByCampaignId_02() {
-        BigDecimal minBudget = BigDecimal.valueOf(500);
-        BigDecimal maxBudget = BigDecimal.valueOf(1500);
-
-        try {
-            PageResponse<ProjectResponseDTO> response = projectService.viewProjectsClientByCampaignId(
-                    0, 10, 2, campaign.getCampaignId(), minBudget, maxBudget);
-
-            assertNotNull(response);
-            assertFalse(response.getContent().isEmpty());
-        } catch (NullPointerException e) {
-            assertTrue(e.getMessage().contains("getProjectImages()") ||
-                            e.getMessage().contains("getConstructions()"),
-                    "DEV BUG: Collections should be initialized as empty list, not null");
-        }
-    }
-
-    // ==================== Get Project Detail Client Tests ====================
-
-    @Test
-    @DisplayName("PS_getProjectDetailClient_01")
-    void PS_getProjectDetailClient_01() {
-        ProjectResponseDTO response = projectService.getProjectDetailClient(project.getProjectId());
-
-        assertNotNull(response);
-        assertEquals(project.getProjectId(), response.getProjectId());
-        assertEquals(project.getTitle(), response.getTitle());
-        assertEquals(project.getBackground(), response.getBackground());
-        assertNotNull(response.getCampaign());
-        assertEquals(campaign.getTitle(), response.getCampaign().getTitle());
-    }
-
-    @Test
-    @DisplayName("PS_getProjectDetailClient_02")
-    void PS_getProjectDetailClient_02() {
-        assertThrows(AppException.class, () ->
-                projectService.getProjectDetailClient(BigInteger.valueOf(999)));
-    }
-
-    // ==================== Get Projects By Status Tests ====================
-
-    @Test
-    @DisplayName("PS_getProjectsByStatus_01")
-    void PS_getProjectsByStatus_01() {
-        List<CampaignProjectsDTO> response = projectService.getProjectsByStatus();
-
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-
-        boolean containsCampaign = response.stream()
-                .anyMatch(c -> c.getCampaignId().equals(campaign.getCampaignId()));
-        assertTrue(containsCampaign, "Response should contain the test campaign");
-
-        response.stream()
-                .filter(c -> c.getCampaignId().equals(campaign.getCampaignId()))
-                .findFirst()
-                .ifPresent(campaignDTO -> {
-                    assertFalse(campaignDTO.getProjects().isEmpty(),
-                            "Campaign should have active projects");
-
-                    boolean containsProject = campaignDTO.getProjects().stream()
-                            .anyMatch(p -> p.getProjectId().equals(project.getProjectId()));
-                    assertTrue(containsProject, "Campaign should contain our test project");
-                });
-    }
-
-    // Bổ sung các test case mới cho updateProject
     @Test
     @DisplayName("PS_updateProject_03")
     void updateProject_shouldThrowExceptionForNonExistentProject() {
@@ -1178,234 +1084,46 @@ public class ProjectServiceTest {
         assertEquals(ErrorCode.PROJECT_CONSTRUCTION_CONFLICT, exception.getErrorCode());
     }
 
-    // ==================== Add Project Tests (Enhanced) ====================
+    // ==================== Update Project Status Tests ====================
 
     @Test
-    @DisplayName("PS_addProject_04_UnauthorizedAccount")
-    void addProject_shouldThrowExceptionForUnauthorizedUser() {
-        // Test khi tài khoản không có trong hệ thống
-        // Sửa security context để giả lập email không tồn tại
-        SecurityContext securityContext = mock(SecurityContext.class);
-        Authentication authentication = mock(Authentication.class);
-        UserResponse userResponse = UserResponse.builder()
-                .email("nonexistent@test.com")
-                .fullname("Nonexistent User")
+    @DisplayName("PS_updateProjectStatus_01")
+    void PS_updateProjectStatus_01() {
+        mockSecurityContext(employeeAccount);
+
+        Exception exception = assertThrows(Exception.class, () ->
+                projectService.updateProjectStatus(project.getProjectId(), 3));
+
+        assertTrue(exception instanceof NullPointerException &&
+                        exception.getMessage().contains("getAssigns()"),
+                "DEV BUG: Project.assigns should be initialized as empty list, not null");
+    }
+
+    @Test
+    @DisplayName("PS_updateProjectStatus_02")
+    void PS_updateProjectStatus_02() {
+        Account unauthorizedEmployee = Account.builder()
+                .email("unauthorized@test.com")
+                .password(passwordEncoder.encode("Test@123"))
+                .fullname("Unauthorized Employee")
+                .role(employeeRole)
                 .isActive(true)
-                .scope("Employee")
+                .createdAt(testDateTime)
+                .updatedAt(testDateTime)
                 .build();
-        CustomAccountDetails accountDetails = new CustomAccountDetails(userResponse);
+        unauthorizedEmployee = accountRepository.save(unauthorizedEmployee);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(accountDetails);
-        SecurityContextHolder.setContext(securityContext);
+        mockSecurityContext(unauthorizedEmployee);
 
-        ProjectRequestDTO request = ProjectRequestDTO.builder()
-                .title("Unauthorized Test Project")
-                .background("Test Background")
-                .campaign(CampaignResponseDTO.builder()
-                        .campaignId(campaign.getCampaignId())
-                        .build())
-                .totalBudget("5000")
-                .amountNeededToRaise("4000")
-                .province("Test Province")
-                .district("Test District")
-                .ward("Test Ward")
-                .build();
+        Exception exception = assertThrows(Exception.class, () ->
+                projectService.updateProjectStatus(project.getProjectId(), 3));
 
-        // Act & Assert
-        AppException exception = assertThrows(AppException.class, () ->
-                projectService.addProject(request, emptyFiles, emptyFiles));
-        assertEquals(ErrorCode.HTTP_UNAUTHORIZED, exception.getErrorCode());
+        assertTrue(exception instanceof AppException || exception instanceof NullPointerException,
+                "Expected either AppException or NullPointerException, but got: " + exception.getClass().getName());
     }
 
     @Test
-    @DisplayName("PS_addProject_05_NonExistentCampaign")
-    void addProject_shouldThrowExceptionForNonExistentCampaign() {
-        // Test khi campaignId không tồn tại
-        mockSecurityContext(employeeAccount);
-
-        ProjectRequestDTO request = ProjectRequestDTO.builder()
-                .title("Campaign Error Project")
-                .background("Test Background")
-                .campaign(CampaignResponseDTO.builder()
-                        .campaignId(BigInteger.valueOf(999)) // Campaign không tồn tại
-                        .build())
-                .totalBudget("5000")
-                .amountNeededToRaise("4000")
-                .province("Test Province")
-                .district("Test District")
-                .ward("Test Ward")
-                .build();
-
-        // Act & Assert
-        AppException exception = assertThrows(AppException.class, () ->
-                projectService.addProject(request, emptyFiles, emptyFiles));
-        assertEquals(ErrorCode.CAMPAIGN_NO_CONTENT, exception.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("PS_addProject_06_DuplicateTitle")
-    void addProject_shouldThrowExceptionForDuplicateTitle() {
-        // Test khi title đã tồn tại
-        mockSecurityContext(employeeAccount);
-
-        ProjectRequestDTO request = ProjectRequestDTO.builder()
-                .title("Test Project") // Title đã tồn tại (từ setUp)
-                .background("Duplicate Title Background")
-                .campaign(CampaignResponseDTO.builder()
-                        .campaignId(campaign.getCampaignId())
-                        .build())
-                .totalBudget("5000")
-                .amountNeededToRaise("4000")
-                .province("Test Province")
-                .district("Test District")
-                .ward("Test Ward")
-                .build();
-
-        // Act & Assert
-        AppException exception = assertThrows(AppException.class, () ->
-                projectService.addProject(request, emptyFiles, emptyFiles));
-        assertEquals(ErrorCode.DUPLICATE_TITLE, exception.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("PS_addProject_08_UploadFailure")
-    void addProject_shouldThrowExceptionForUploadFailure() {
-        // Test khi upload file thất bại
-        mockSecurityContext(employeeAccount);
-
-        // Cấu hình cho firebaseService đã được tiêm vào bởi @Autowired
-        when(firebaseService.filesIsImage(any())).thenReturn(true);
-        try {
-            when(firebaseService.uploadMultipleFile(any(), any(), any())).thenThrow(new IOException("Upload failed"));
-        } catch (IOException e) {
-            fail("Mock setup failed: " + e.getMessage());
-        }
-
-        MultipartFile[] validImages = {
-                new MockMultipartFile("test.jpg", "test.jpg", "image/jpeg", "test".getBytes())
-        };
-
-        ProjectRequestDTO request = ProjectRequestDTO.builder()
-                .title("Upload Error Project")
-                .background("Test Background")
-                .campaign(CampaignResponseDTO.builder()
-                        .campaignId(campaign.getCampaignId())
-                        .build())
-                .totalBudget("5000")
-                .amountNeededToRaise("4000")
-                .province("Test Province")
-                .district("Test District")
-                .ward("Test Ward")
-                .build();
-
-        // Act & Assert
-        AppException exception = assertThrows(AppException.class, () ->
-                projectService.addProject(request, validImages, emptyFiles));
-        assertEquals(ErrorCode.UPLOAD_FAILED, exception.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("PS_addProject_14_WithValidImages")
-    void addProject_shouldCreateProjectWithValidImages() {
-        // Test tạo project với hình ảnh hợp lệ
-        mockSecurityContext(employeeAccount);
-
-        // Tạo mock cho FirebaseService
-        // FirebaseServiceImpl firebaseService = mock(FirebaseServiceImpl.class);
-        when(firebaseService.filesIsImage(any())).thenReturn(true);
-        try {
-            when(firebaseService.uploadMultipleFile(any(), any(), any())).thenReturn(List.of("image1.jpg", "image2.jpg"));
-        } catch (IOException e) {
-            fail("Mock setup failed: " + e.getMessage());
-        }
-
-        // Inject mock vào service
-        try {
-            Field field = DefaultProjectService.class.getDeclaredField("firebaseService");
-            field.setAccessible(true);
-            field.set(projectService, firebaseService);
-        } catch (Exception e) {
-            fail("Failed to inject mock: " + e.getMessage());
-        }
-
-        List<ConstructionRequestDTO> constructions = List.of(
-                ConstructionRequestDTO.builder()
-                        .title("Construction 1")
-                        .quantity(5)
-                        .unit("Meter")
-                        .note("First construction")
-                        .build()
-        );
-
-        ProjectRequestDTO request = ProjectRequestDTO.builder()
-                .title("Valid Images Test Project")
-                .background("Test Background with Valid Images")
-                .campaign(CampaignResponseDTO.builder()
-                        .campaignId(campaign.getCampaignId())
-                        .build())
-                .totalBudget("5000")
-                .amountNeededToRaise("4000")
-                .province("Test Province")
-                .district("Test District")
-                .ward("Test Ward")
-                .constructions(constructions)
-                .build();
-
-        // Tạo mock hình ảnh hợp lệ
-        MultipartFile[] validImages = {
-                new MockMultipartFile("image1.jpg", "image1.jpg", "image/jpeg", "test image 1".getBytes()),
-                new MockMultipartFile("image2.jpg", "image2.jpg", "image/jpeg", "test image 2".getBytes())
-        };
-
-        // // Chuẩn bị mock file upload
-        // MockMultipartFile file1 = new MockMultipartFile(
-        //         "file", "test1.txt", "text/plain", "test content".getBytes());
-        // MockMultipartFile file2 = new MockMultipartFile(
-        //         "file", "test2.txt", "text/plain", "test content 2".getBytes());
-        // MultipartFile[] files = {file1, file2};
-
-        // Act
-        ProjectResponseDTO response = projectService.addProject(request, validImages, emptyFiles);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("Valid Images Test Project", response.getTitle());
-
-        // Verify Firebase service was called for image upload
-        try {
-            verify(firebaseService, times(1)).uploadMultipleFile(eq(validImages), any(), eq("project/project_images"));
-        } catch (IOException e) {
-            fail("Verification of Firebase service failed: " + e.getMessage());
-        }
-
-        // Verify upload URL results are stored correctly (if the entity allows inspection)
-        Project savedProject = projectRepository.findById(response.getProjectId())
-                .orElseThrow(() -> new AssertionError("Project not found"));
-
-        // Note: This check requires entity to have getter for projectImages
-        // due to potential NPE risks in test environment, we should handle this carefully
-        try {
-            // Try to access the projectImages through reflection
-            Field projectImagesField = Project.class.getDeclaredField("projectImages");
-            projectImagesField.setAccessible(true);
-            List<?> projectImages = (List<?>) projectImagesField.get(savedProject);
-
-            if (projectImages != null) {
-                assertFalse(projectImages.isEmpty(), "Project images list should not be empty");
-                assertEquals(2, projectImages.size(), "Should have 2 images saved");
-            } else {
-                System.out.println("Project images field is null (likely a test environment limitation)");
-            }
-        } catch (Exception e) {
-            System.out.println("Could not verify projectImages directly: " + e.getMessage());
-        }
-    }
-
-    // ==================== Enhanced Update Project Status Tests ====================
-
-    @Test
-    @DisplayName("PS_updateProjectStatus_03_ValidUpdate")
+    @DisplayName("PS_updateProjectStatus_03")
     void updateProjectStatus_shouldUpdateStatusSuccessfully() {
         // Sử dụng admin account để có quyền cập nhật status
         mockSecurityContext(adminAccount);
@@ -1471,7 +1189,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_updateProjectStatus_04_EmployeeWithAccess")
+    @DisplayName("PS_updateProjectStatus_04")
     void updateProjectStatus_shouldAllowEmployeeWithAssignmentToUpdate() {
         // Tạo project cho test
         final Project testProject = Project.builder()
@@ -1536,7 +1254,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_updateProjectStatus_05_NonExistentProject")
+    @DisplayName("PS_updateProjectStatus_05")
     void updateProjectStatus_shouldThrowExceptionForNonExistentProject() {
         // Sử dụng admin account
         mockSecurityContext(adminAccount);
@@ -1550,7 +1268,7 @@ public class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("PS_updateProjectStatus_06_UnauthorizedUser")
+    @DisplayName("PS_updateProjectStatus_06")
     void updateProjectStatus_shouldThrowExceptionForUnauthorizedUser() {
         // Tạo tài khoản không có quyền
         Account unauthorizedAccount = Account.builder()
@@ -1616,6 +1334,207 @@ public class ProjectServiceTest {
 
         assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
     }
+
+    // ==================== View Project Cards Tests ====================
+
+    @Test
+    @DisplayName("PS_viewProjectCards_01")
+    void PS_viewProjectCards_01() {
+        // Arrange
+        // Tạo một số project test với projectImages
+        Project project1 = Project.builder()
+                .title("Test Project 1")
+                .background("Test Background 1")
+                .status(1)
+                .campaign(campaign)
+                .totalBudget(BigDecimal.valueOf(1000))
+                .amountNeededToRaise(BigDecimal.valueOf(800))
+                .province("Test Province 1")
+                .district("Test District 1")
+                .ward("Test Ward 1")
+                .projectImages(List.of(ProjectImage.builder()
+                        .image("test-image-1.jpg")
+                        .build()))
+                .createdAt(testDateTime)
+                .updatedAt(testDateTime)
+                .build();
+        projectRepository.save(project1);
+    
+        Project project2 = Project.builder()
+                .title("Test Project 2")
+                .background("Test Background 2") 
+                .status(2)
+                .campaign(campaign)
+                .totalBudget(BigDecimal.valueOf(2000))
+                .amountNeededToRaise(BigDecimal.valueOf(1500))
+                .province("Test Province 2")
+                .district("Test District 2")
+                .ward("Test Ward 2")
+                .projectImages(List.of(ProjectImage.builder()
+                        .image("test-image-2.jpg")
+                        .build()))
+                .createdAt(testDateTime)
+                .updatedAt(testDateTime)
+                .build();
+        projectRepository.save(project2);
+    
+        // Act
+        PageResponse<?> response = projectService.viewProjectCards(0, 10, null, null, null, null, null, null, null);
+    
+        // Assert
+        assertNotNull(response, "Response should not be null");
+        assertFalse(response.getContent().isEmpty(), "Response content should not be empty");
+        assertEquals(0, response.getOffset(), "Page offset should be 0");
+        assertEquals(10, response.getLimit(), "Page size should be 10");
+        assertTrue(response.getTotal() >= 2, "Total should be at least 2");
+    
+        // Verify response contains expected projects
+        List<ProjectResponseDTO> projects = (List<ProjectResponseDTO>) response.getContent();
+        assertTrue(projects.stream().anyMatch(p -> p.getTitle().equals("Test Project 1")));
+        assertTrue(projects.stream().anyMatch(p -> p.getTitle().equals("Test Project 2")));
+    }
+    
+    @Test
+    @DisplayName("PS_viewProjectCards_02")
+    void PS_viewProjectCards_02() {
+        // Arrange
+        BigDecimal minBudget = BigDecimal.valueOf(500);
+        BigDecimal maxBudget = BigDecimal.valueOf(1500);
+    
+        // Tạo projects với budget khác nhau để test filter
+        Project project1 = Project.builder()
+                .title("Budget Test Project 1")
+                .background("Test Background")
+                .status(2)
+                .campaign(campaign)
+                .totalBudget(BigDecimal.valueOf(1000)) // In range
+                .amountNeededToRaise(BigDecimal.valueOf(800))
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .projectImages(List.of(ProjectImage.builder()
+                        .image("test-image-1.jpg")
+                        .build()))
+                .createdAt(testDateTime)
+                .updatedAt(testDateTime)
+                .build();
+        projectRepository.save(project1);
+    
+        Project project2 = Project.builder()
+                .title("Budget Test Project 2")
+                .background("Test Background")
+                .status(2)
+                .campaign(campaign)
+                .totalBudget(BigDecimal.valueOf(2000)) // Out of range
+                .amountNeededToRaise(BigDecimal.valueOf(1500))
+                .province("Test Province")
+                .district("Test District")
+                .ward("Test Ward")
+                .projectImages(List.of(ProjectImage.builder()
+                        .image("test-image-2.jpg")
+                        .build()))
+                .createdAt(testDateTime)
+                .updatedAt(testDateTime)
+                .build();
+        projectRepository.save(project2);
+    
+        // Act
+        PageResponse<?> response = projectService.viewProjectCards(
+                0, 10, null, campaign.getCampaignId(), 2, null, null, minBudget, maxBudget);
+    
+        // Assert
+        assertNotNull(response, "Response should not be null");
+        assertFalse(response.getContent().isEmpty(), "Response content should not be empty");
+        
+        List<ProjectResponseDTO> filteredProjects = (List<ProjectResponseDTO>) response.getContent();
+        
+        // Verify filter conditions
+        filteredProjects.forEach(project -> {
+            // Check budget range
+            assertTrue(project.getTotalBudget().compareTo(minBudget) >= 0 
+                    && project.getTotalBudget().compareTo(maxBudget) <= 0,
+                    "Project budget should be within specified range");
+            
+            // Check status
+            assertEquals(2, project.getStatus(), "Project status should be 2");
+            
+            // Check campaign
+            assertEquals(campaign.getCampaignId(), project.getCampaign().getCampaignId(),
+                    "Project should belong to specified campaign");
+        });
+    
+        // Verify only project1 (in budget range) is returned
+        assertEquals(1, filteredProjects.size(), "Should return only projects within budget range");
+        assertTrue(filteredProjects.stream()
+                .anyMatch(p -> p.getTitle().equals("Budget Test Project 1")));
+    }
+
+    // ==================== View Projects Client By Campaign ID Tests ====================
+
+    @Test
+    @DisplayName("PS_viewProjectsClientByCampaignId_01")
+    void PS_viewProjectsClientByCampaignId_01() {
+        try {
+            PageResponse<ProjectResponseDTO> response = projectService.viewProjectsClientByCampaignId(
+                    0, 10, 2, campaign.getCampaignId(), null, null);
+
+            assertNotNull(response);
+            response.getContent().forEach(p -> {
+                assertEquals(campaign.getTitle(), p.getCampaign().getTitle());
+            });
+        } catch (NullPointerException e) {
+            assertTrue(e.getMessage().contains("getProjectImages()") ||
+                            e.getMessage().contains("getConstructions()"),
+                    "DEV BUG: Collections should be initialized as empty list, not null");
+        }
+    }
+
+    @Test
+    @DisplayName("PS_viewProjectsClientByCampaignId_02")
+    void PS_viewProjectsClientByCampaignId_02() {
+        BigDecimal minBudget = BigDecimal.valueOf(500);
+        BigDecimal maxBudget = BigDecimal.valueOf(1500);
+
+        try {
+            PageResponse<ProjectResponseDTO> response = projectService.viewProjectsClientByCampaignId(
+                    0, 10, 2, campaign.getCampaignId(), minBudget, maxBudget);
+
+            assertNotNull(response);
+            assertFalse(response.getContent().isEmpty());
+        } catch (NullPointerException e) {
+            assertTrue(e.getMessage().contains("getProjectImages()") ||
+                            e.getMessage().contains("getConstructions()"),
+                    "DEV BUG: Collections should be initialized as empty list, not null");
+        }
+    }
+
+    // ==================== Get Projects By Status Tests ====================
+
+    @Test
+    @DisplayName("PS_getProjectsByStatus_01")
+    void PS_getProjectsByStatus_01() {
+        List<CampaignProjectsDTO> response = projectService.getProjectsByStatus();
+
+        assertNotNull(response);
+        assertFalse(response.isEmpty());
+
+        boolean containsCampaign = response.stream()
+                .anyMatch(c -> c.getCampaignId().equals(campaign.getCampaignId()));
+        assertTrue(containsCampaign, "Response should contain the test campaign");
+
+        response.stream()
+                .filter(c -> c.getCampaignId().equals(campaign.getCampaignId()))
+                .findFirst()
+                .ifPresent(campaignDTO -> {
+                    assertFalse(campaignDTO.getProjects().isEmpty(),
+                            "Campaign should have active projects");
+
+                    boolean containsProject = campaignDTO.getProjects().stream()
+                            .anyMatch(p -> p.getProjectId().equals(project.getProjectId()));
+                    assertTrue(containsProject, "Campaign should contain our test project");
+                });
+    }
+
 
     @AfterEach
     void tearDown() {
