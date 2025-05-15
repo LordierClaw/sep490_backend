@@ -1,5 +1,6 @@
 package vn.com.fpt.sep490_g28_summer2024_be.unittest.service;
 
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -102,7 +103,7 @@ public class CategoryServiceTest {
         request.setTitle("");
         request.setDescription("Empty title category");
 
-        assertThrows(AppException.class, () -> categoryService.create(request));
+        assertThrows(ConstraintViolationException.class, () -> categoryService.create(request));
     }
 
     @Test
@@ -113,7 +114,7 @@ public class CategoryServiceTest {
         request.setTitle("A".repeat(256)); // Exceed max length
         request.setDescription("Long title category");
 
-        assertThrows(AppException.class, () -> categoryService.create(request));
+        assertThrows(ConstraintViolationException.class, () -> categoryService.create(request));
     }
 
     @Test
@@ -176,8 +177,7 @@ public class CategoryServiceTest {
         request.setTitle("Existing Category");
         request.setDescription("Updated Description");
 
-        assertThrows(AppException.class, 
-            () -> categoryService.update(request, category.getCategoryId()));
+        assertThrows(AppException.class, () -> categoryService.update(request, category.getCategoryId()));
     }
 
     @Test
